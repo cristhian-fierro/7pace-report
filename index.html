@@ -543,14 +543,14 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
     <div class="config-body" id="configBody">
       <div class="config-grid">
         <div class="field">
-          <label>7pace API base URL</label>
-          <input type="text" id="apiUrl" value="https://app.7pace.com/api/rest/3.0" placeholder="https://app.7pace.com/api/rest/3.0">
-          <div class="hint">Leave as default unless your org uses a custom 7pace domain.</div>
+          <label>7pace OData API base URL</label>
+          <input type="text" id="apiUrl" value="https://parabitsystems.timehub.7pace.com/api/odata/v3.2" placeholder="https://yourorg.timehub.7pace.com/api/odata/v3.2">
+          <div class="hint">Found in 7pace → Settings → Reporting &amp; API → REST API tab → "Latest stable API Root".</div>
         </div>
         <div class="field">
           <label>API token <span style="color:var(--red)">*</span></label>
-          <input type="password" id="apiToken" placeholder="Paste your 7pace personal access token">
-          <div class="hint">Azure DevOps → Extensions → 7pace → Settings → API Tokens → New token</div>
+          <input type="password" id="apiToken" placeholder="Paste your 7pace API token">
+          <div class="hint">7pace → Settings → Reporting &amp; API → REST API tab → copy the API Token shown.</div>
         </div>
         <div class="field">
           <label>Filter users (optional)</label>
@@ -737,19 +737,20 @@ function hideStatus() { document.getElementById("statusMsg").classList.add("hidd
 
 /* ── PowerShell script builder ────────────────────────────── */
 function buildPsScript(url, token, start, end, top) {
-  return `$headers = @{\n  Authorization = "Bearer ${token}"\n  "Content-Type" = "application/json"\n}\n$filter  = "timestamp ge '${start}T00:00:00Z' and timestamp lt '${end}T00:00:00Z'"\n$url     = "${url}/workLogs?` + `\$filter=" + [uri]::EscapeDataString($filter) + "&\$include=user&\$top=${top}"\n$result  = Invoke-RestMethod -Uri $url -Headers $headers -Method Get\n$result | ConvertTo-Json -Depth 10 | Set-Clipboard\nWrite-Host "Copied to clipboard!"`;
+  return `$headers = @{\n  "Authorization" = "Bearer ${token}"\n  "Content-Type"  = "application/json"\n}\n$filter = "Timestamp ge ${start}T00:00:00Z and Timestamp lt ${end}T00:00:00Z"\n$url    = "${url}/WorkLogs?\$filter=" + [uri]::EscapeDataString($filter) + "&\$expand=User&\$top=${top}"\n$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get\n$result | ConvertTo-Json -Depth 10 | Set-Clipboard\nWrite-Host "Done — JSON copied to clipboard!"`;
 }
 
-/* ── Fetch ────────────────────────────────────────────────── */
+/* ── Fetch (OData API) ────────────────────────────────────── */
 async function fetchEntries(monday) {
-  const url   = (cfg.apiUrl || "https://app.7pace.com/api/rest/3.0").replace(/\/$/, "");
+  const url   = (cfg.apiUrl || "https://parabitsystems.timehub.7pace.com/api/odata/v3.2").replace(/\/$/, "");
   const token = cfg.apiToken || "";
   const start = toISO(monday);
   const end   = toISO(addDays(monday, 7));
   const top   = cfg.maxEntries || 5000;
 
-  const filter   = `timestamp ge '${start}T00:00:00Z' and timestamp lt '${end}T00:00:00Z'`;
-  const endpoint = `${url}/workLogs?$filter=${encodeURIComponent(filter)}&$include=user&$top=${top}`;
+  /* OData uses PascalCase field names and no quotes around datetime values */
+  const filter   = `Timestamp ge ${start}T00:00:00Z and Timestamp lt ${end}T00:00:00Z`;
+  const endpoint = `${url}/WorkLogs?$filter=${encodeURIComponent(filter)}&$expand=User&$top=${top}`;
 
   const resp = await fetch(endpoint, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
@@ -757,20 +758,27 @@ async function fetchEntries(monday) {
 
   if (!resp.ok) { const b = await resp.text(); throw new Error(`HTTP ${resp.status}: ${b.slice(0,300)}`); }
   const data = await resp.json();
-  return Array.isArray(data) ? data : (data.data || data.value || []);
+  /* OData wraps results in a "value" array */
+  return Array.isArray(data) ? data : (data.value || data.data || []);
 }
 
-/* ── Aggregate ────────────────────────────────────────────── */
+/* ── Aggregate (handles both OData PascalCase and REST camelCase) ── */
 function aggregate(entries, days) {
   const filterVal = (document.getElementById("filterInput").value.trim() || cfg.userFilter || "").toLowerCase();
   const userMap   = {};
   entries.forEach(e => {
-    const name    = e.user?.displayName || e.user?.name || e.userId || "Unknown";
+    /* OData: User.DisplayName | REST: user.displayName */
+    const name = e.User?.DisplayName || e.User?.Name || e.user?.displayName || e.user?.name || e.userId || "Unknown";
     if (filterVal && !name.toLowerCase().includes(filterVal)) return;
-    const dateStr = toISO(new Date(e.timestamp || e.date || e.startTime));
+    /* OData: Timestamp | REST: timestamp / date / startTime */
+    const rawTs  = e.Timestamp || e.timestamp || e.date || e.startTime;
+    if (!rawTs) return;
+    const dateStr = toISO(new Date(rawTs));
     if (!days.includes(dateStr)) return;
     if (!userMap[name]) userMap[name] = {};
-    userMap[name][dateStr] = (userMap[name][dateStr] || 0) + (e.length || e.duration || 0);
+    /* OData: Length (seconds) | REST: length / duration */
+    const secs = e.Length || e.length || e.duration || 0;
+    userMap[name][dateStr] = (userMap[name][dateStr] || 0) + secs;
   });
   return userMap;
 }
