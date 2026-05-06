@@ -1,3 +1,734 @@
+
+Claude finished the response
+You said: In 7pace integrated in devops.
+In 7pace integrated in devops. I want to get a report where shows a timesheet entries in a weekly basis: users and total hrs per day.
+
+9:13 AM
+Claude responded: I'll build a full interactive 7pace weekly timesheet report tool as an artifact.
+
+Architected interactive weekly timesheet dashboard with API integration
+Architected interactive weekly timesheet dashboard with API integration
+I'll build a full interactive 7pace weekly timesheet report tool as an artifact. It will connect directly to the 7pace REST API, let you pick any week, and render a grid of users × days with total hours.
+
+
+
+Here's how to use it:
+
+Setup
+
+API base URL — leave the default (https://app.7pace.com/api/rest/3.0) unless your org uses a custom domain.
+API token — in Azure DevOps, go to Extensions → 7pace Timetracker → Settings → API Tokens, then create a new token and paste it in.
+Running the report
+
+Pick any week using the date picker or the ← → arrows / "this week" / "last week" shortcuts.
+Optionally filter by a specific user's display name.
+Hit load report — it fetches all work log entries for that 7-day window and groups them by user and day.
+What you get
+
+Summary cards: total hours, users who logged time, entry count, and avg hrs/user.
+A table with one row per user, columns for each day (Mon–Sun), color-coded pills (green ≥ 6h, blue ≥ 2h, gray < 2h), and a row/column total.
+A CSV export button for the full breakdown.
+If you see a CORS error — the 7pace API may block direct browser calls. The tool will automatically generate a PowerShell script you can run locally; paste the JSON output back in and it renders the same report.
+
+You said: I want to have this view under the 7pace options
+I want to have this view under the 7pace options
+
+9:15 AM
+Claude responded: I'll redesign the artifact to look like it's natively embedded inside the 7pace Timetracker UI in Azure DevOps — with the 7pace sidebar/tab navigation above it…
+
+Envisioned integrating report as native tab within 7pace interface
+Envisioned integrating report as native tab within 7pace interface
+I'll redesign the artifact to look like it's natively embedded inside the 7pace Timetracker UI in Azure DevOps — with the 7pace sidebar/tab navigation above it and your report as one of the options.
+
+
+
+The report now sits inside a faithful Azure DevOps + 7pace shell, with:
+
+Top bar — Azure DevOps nav (Boards, Repos, Pipelines, etc.)
+7pace header — with the extension icon and all the standard tabs: My Timesheet, Work Logs, Calendar, Weekly Report (active), Settings
+Weekly Report tab — your full report with the compact DevOps-style toolbar, metric cards, color-coded user table with initials avatars, and CSV export
+All the functionality from before is preserved — week navigation, user filter, API token config (behind the ⚙ API button), and the PowerShell fallback if CORS blocks the direct call. Just click the ⚙ API button to enter your token and hit Load.
+
+You said: how should I access to this view?
+how should I access to this view?
+
+9:18 AM
+Claude responded: Great question — the widget above is a prototype/mockup running inside Claude.
+
+Weighed deployment options for integrating custom report into Azure DevOps
+Weighed deployment options for integrating custom report into Azure DevOps
+Great question — the widget above is a prototype/mockup running inside Claude. To actually access it inside Azure DevOps, you have a few realistic paths depending on how much effort you want to invest:
+
+Option 1 — Standalone hosted page (quickest) Save the HTML as a single file, host it on Azure Static Web Apps, GitHub Pages, or even a SharePoint page, and pin the URL as a favorite in your browser or share it with the team. Zero DevOps extension work required.
+
+Option 2 — Azure DevOps Dashboard Widget (recommended for teams) Package the report as a Dashboard Widget extension. It shows up on any Azure DevOps dashboard your team already uses. Steps:
+
+Wrap the HTML in an Azure DevOps extension manifest (vss-extension.json) declaring a ms.vss-dashboards-web.widget contribution.
+Package with tfx-cli → tfx extension create.
+Upload to the Azure DevOps Marketplace (private) and install in your org.
+Option 3 — Azure DevOps Hub (closest to what the mockup shows) Add a real custom Hub tab in the Azure DevOps left nav (under a group like "Analytics" or alongside 7pace). Same extension packaging as above, but you contribute to ms.vss-web.hub-group instead. This is what the mockup was simulating — it would appear as its own nav section, not literally inside 7pace's tabs (7pace doesn't expose public contribution points to add tabs into their own extension).
+
+Important caveat on the "inside 7pace" look You cannot natively inject a tab into 7pace's own tab bar — that would require 7pace to publish contribution points in their extension manifest, which they currently don't. The mockup was showing what it would feel like visually. Options 2 or 3 are the real equivalents.
+
+Fastest path I'd recommend:
+
+Build an Azure DevOps Hub extension — a single vss-extension.json + the HTML file. Takes about 30–60 minutes, no backend needed, and it lives permanently in your org's DevOps sidebar.
+
+Want me to generate the full extension package (manifest + ready-to-deploy HTML) so you can just run tfx extension create and publish it?
+
+You said: implement step-by-step Option 2 — Azure DevOps Dashboard Widget (recommended for teams)
+implement step-by-step Option 2 — Azure DevOps Dashboard Widget (recommended for teams)
+
+9:21 AM
+
+Architecting extension package structure for dashboard widget integration
+Architecting extension package structure for dashboard widget integration
+Claude's response was interrupted
+You said: please implement step-by-step Option 1 — Standalone hosted page (quickest)
+please implement step-by-step Option 1 — Standalone hosted page (quickest)
+
+9:24 AM
+Claude responded: You have three files ready to download:
+
+Architected standalone HTML solution with integrated styling and deployment strategy
+Architected standalone HTML solution with integrated styling and deployment strategy
+You have three files ready to download:
+
+7pace-standalone.zip — everything packaged together
+index.html — the single page you actually deploy
+DEPLOY.md — the full step-by-step guide
+Quickest path: GitHub Pages (2 min)
+Create a new GitHub repo (can be private) → upload index.html → commit.
+Go to Settings → Pages → Source: main branch, / (root) → Save.
+After ~60 seconds your URL is live at https://<you>.github.io/<repo-name>/.
+Open it → paste your 7pace API token → Save & load report.
+Best for teams: Azure Static Web Apps
+powershell
+az login
+az staticwebapp deploy `
+  --name "7pace-weekly-report" `
+  --resource-group "YourRG" `
+  --source "C:\path\to\7pace-standalone"
+Then add Azure AD authentication in the Static Web App settings so only your org can access it.
+
+If you prefer Teams
+Host via GitHub Pages or Azure Static Web Apps first, then add the URL as a Teams tab (click + in any channel → Website → paste URL). It loads full-featured inside Teams.
+
+What's in the page:
+
+API token saved in browser localStorage — never in the repo or server
+Week navigation with ← → arrows
+User filter, metric cards, color-coded hours table, CSV export
+Automatic PowerShell fallback with a copy button if CORS blocks the direct API call
+
+7pace standalone
+ZIP 
+
+Index
+Code · HTML 
+
+Deploy
+Document · MD 
+You said: show me step by step Teams implementation
+show me step by step Teams implementation
+
+9:29 AM
+Claude responded: Walk through each step using the Next / Back buttons.
+
+Architected interactive walkthrough with visual Teams UI mockups
+Architected interactive walkthrough with visual Teams UI mockups
+The user wants a step-by-step guide for implementing the Teams tab option. Let me create a visual step-by-step guide showing exactly how to add the report as a Teams tab. I'll make this as a nice interactive visual walkthrough.
+
+I'll create an interactive step-by-step guide showing exactly how to add the 7pace report as a Microsoft Teams tab. This should be a visual walkthrough with mock Teams UI screens showing each step. I'll make it interactive with a stepper so users can go through each step one at a time.
+
+The steps are:
+
+Host the page first (GitHub Pages or Azure Static Web Apps - need a URL)
+Open Microsoft Teams
+Go to the channel where you want to add the tab
+Click the "+" button to add a tab
+Search for "Website" app
+Select it
+Paste the URL and name the tab
+Save and the tab appears in the channel
+Now I'm building the interactive stepper component with mock Teams UI mockups for each step.
+
+Show more
+Done
+
+
+Walk through each step using the Next / Back buttons. Here's a quick summary of what happens at each stage:
+
+Host the page — deploy index.html to GitHub Pages or Azure Static Web Apps to get a public URL. This is the prerequisite — Teams needs a URL to load.
+Open Teams — navigate to the channel where you want the report (a dedicated #timesheets or #reports channel works best).
+Click + — the small + at the end of the tab bar opens the app catalog.
+Find Website — type website in the search box and select the Website app (globe icon, published by Microsoft).
+Paste URL — give the tab a name (e.g. 7pace Weekly Report) and paste the URL from step 1, then click Save.
+Done — the tab is pinned for everyone in the channel. Each user will see the settings panel on first visit to enter their own API token.
+One important note: the API token is stored per browser, not shared across the team. Each user needs to paste their own 7pace token once when they first open the tab.
+
+You said: Teams tab
+Teams tab
+
+In any Teams channel → click + to add a tab.
+Choose Website.
+Paste the GitHub Pages or Azure Static Web Apps URL from Options A/B.
+The report loads directly inside Teams, full-featured.
+Where I get the Paste the GitHub Pages or Azure Static Web Apps URL from Options A/B?
+
+9:42 AM
+Claude responded: You need to deploy the index.
+
+Charted deployment pathway to retrieve shareable URL
+Charted deployment pathway to retrieve shareable URL
+You need to deploy the index.html file first to get a URL. Here's the fastest path — GitHub Pages, no account setup needed beyond a free GitHub account:
+
+Step 1 — Go to github.com and create a new repository
+
+Click the + icon (top right) → New repository
+Name it anything, e.g. 7pace-report
+Set it to Public (required for free GitHub Pages)
+Click Create repository
+Step 2 — Upload the file
+
+Inside the new repo, click Add file → Upload files
+Drag and drop the index.html file you downloaded earlier
+Click Commit changes
+Step 3 — Enable GitHub Pages
+
+Go to Settings (tab at the top of the repo)
+Scroll down to Pages in the left sidebar
+Under Source, select Deploy from a branch
+Branch: main, folder: / (root)
+Click Save
+Step 4 — Get your URL
+
+Wait about 60 seconds, then refresh the Pages settings page
+You'll see a green banner with your URL:
+  https://<your-github-username>.github.io/7pace-report/
+That's the URL you paste into Teams in step 3 of the tab setup
+That's it. The whole thing takes about 3 minutes. Once you have that URL, go back to Teams → your channel → + → Website → paste it in.
+
+If you don't have a GitHub account, let me know and I can walk you through the Azure Static Web Apps path instead, which works entirely inside Azure DevOps without needing GitHub.
+
+You said: can I deploy the index.
+can I deploy the index.html in Team or sharepoint?
+
+9:43 AM
+Claude responded: Yes — both work, no GitHub or Azure needed.
+Yes — both work, no GitHub or Azure needed. Here are your two options:
+
+SharePoint (simplest, already have it)
+The catch: SharePoint's embed sandbox blocks fetch() calls to external APIs, so the direct API call won't work. You'll need to use the PowerShell fallback (built into the page) to paste data manually.
+
+Steps:
+
+Go to any SharePoint site → open or create a page
+Click Edit (top right)
+Click + to add a web part → search for Embed
+Open index.html in any text editor (Notepad is fine)
+Select all the content (Ctrl+A) → copy it
+Paste it into the Embed web part's code box
+Click Publish
+That's your URL — something like:
+
+https://<yourorg>.sharepoint.com/sites/<site>/SitePages/<pagename>.aspx
+Paste that into Teams as the tab URL.
+
+Teams itself — built-in SharePoint page (recommended)
+Teams actually creates a SharePoint site behind every channel automatically. You can publish directly there:
+
+In your Teams channel → click + → choose SharePoint
+Select Create a new page
+Add an Embed web part → paste the full HTML of index.html
+Publish
+It becomes a proper tab inside that exact channel — no separate URL needed.
+
+Important limitation with both
+SharePoint's sandbox blocks direct fetch() to external domains like app.7pace.com. When you open the page you'll see the built-in PowerShell fallback:
+
+Copy the generated PowerShell script from the page
+Run it on your machine
+Paste the JSON output back into the page
+The report renders instantly
+My recommendation: Use the Teams + SharePoint route (option 2 above) — it's the most native, requires zero external accounts, and the tab lives exactly where your team already works. Want me to walk through it step by step with screenshots?
+
+You said: after click on (+) and select Share pint:
+1778075127013_image.png
+after click on (+) and select Share pint:
+
+9:45 AM
+Claude responded: You're in the right place.
+
+Mapped SharePoint configuration steps from current dialog position
+Mapped SharePoint configuration steps from current dialog position
+You're in the right place. From this exact screen, follow these steps:
+
+Step 1 — Click the "Pages" tab at the top of that dialog (next to Recommended).
+
+Step 2 — Click "New page" — a button will appear at the top of the pages list to create a fresh page.
+
+Step 3 — A SharePoint page editor opens. Once inside:
+
+Click + to add a web part
+Search for Embed and select it
+In the embed box, paste the entire contents of index.html (open it in Notepad, Ctrl+A, Ctrl+C, paste)
+Click Publish (top right)
+Step 4 — Back in Teams, the dialog will now show your new page in the Pages list. Select it and click Save.
+
+However — looking at your screen more carefully, the fastest route is actually the top-right link:
+
+"Add page or list from any SharePoint site"
+
+Click that link instead, which lets you paste a direct SharePoint page URL if you already have one published. If you haven't published the page yet, go through Steps 1–4 above first to create it, then use this link to pin it as the tab.
+
+Reminder on the API limitation: Once the tab loads inside Teams via SharePoint, the 7pace API call will be blocked by the sandbox. The page will automatically show the PowerShell fallback — copy the script, run it on your machine, paste the JSON back, and the full report renders. Want me to simplify that PowerShell script so it auto-copies results to your clipboard?
+
+You said: after selecting Pages tab:
+1778075201524_image.png
+after selecting Pages tab:
+
+9:46 AM
+Claude responded: You can see existing pages but there's no "New page" button in this Teams dialog.
+
+Identified missing button and charted SharePoint creation path
+Identified missing button and charted SharePoint creation path
+You can see existing pages but there's no "New page" button in this Teams dialog. You need to create the page in SharePoint first, then come back here to select it.
+
+Step 1 — Open your SharePoint site directly
+
+In a browser, go to:
+
+https://<yourorg>.sharepoint.com/sites/Engineering-Mgmt
+Or inside Teams, click the three dots (...) next to your channel → Open in SharePoint.
+
+Step 2 — Create a new page
+
+Click New → Page (top left of the SharePoint site)
+Choose Blank template
+Give it a name, e.g. 7pace Weekly Report
+Step 3 — Add the Embed web part
+
+Click + on the page canvas
+Search for Embed → select it
+Open index.html in Notepad → Ctrl+A → Ctrl+C → paste into the embed code box
+Click Publish (top right)
+Step 4 — Copy the page URL from your browser address bar. It will look like:
+
+https://<yourorg>.sharepoint.com/sites/Engineering-Mgmt/SitePages/7pace-Weekly-Report.aspx
+Step 5 — Back in Teams, click + → SharePoint → click "Add page or list from any SharePoint site" (top right of the dialog) → paste that URL → Save.
+
+Your new page will then appear as a pinned tab in the channel. Want me to walk through the SharePoint page editor steps in detail?
+
+You said: after copy the embeeded code, getting: This embed code doesn't seem to work.
+after copy the embeeded code, getting: This embed code doesn't seem to work. We only support iframe based embeds.
+
+9:51 AM
+Claude responded: SharePoint's Embed web part only accepts <iframe> tags, not full HTML.
+SharePoint's Embed web part only accepts <iframe> tags, not full HTML. The solution is to host the index.html as a file in SharePoint itself, then embed it via an iframe pointing to that file.
+
+Step 1 — Upload index.html to SharePoint Documents
+
+Go to your SharePoint site → click Documents in the left sidebar
+Click Upload → Files
+Upload your index.html file
+Once uploaded, click the three dots ... next to the file → Copy link
+Change the URL to get the direct file URL — it looks like:
+https://<yourorg>.sharepoint.com/sites/Engineering-Mgmt/Shared%20Documents/index.html
+Step 2 — Test the direct URL first
+
+Paste that URL in your browser. If it opens the report page correctly, you're good to go.
+
+Step 3 — Go back to your SharePoint page and use the Embed web part
+
+Paste this into the Embed code box — replacing the URL with yours:
+
+html
+<iframe 
+  src="https://<yourorg>.sharepoint.com/sites/Engineering-Mgmt/Shared%20Documents/index.html"
+  width="100%" 
+  height="800px" 
+  frameborder="0">
+</iframe>
+Click Apply → Publish.
+
+Step 4 — Pin it as a Teams tab
+
+Back in Teams → + → SharePoint → "Add page or list from any SharePoint site" → paste the SharePoint page URL → Save.
+
+However — there's a simpler route:
+
+Skip the SharePoint page entirely. In Teams:
+
+Click + → choose Website (not SharePoint)
+Paste the direct file URL from Step 1 directly
+Click Save
+The file loads directly from SharePoint as a Teams tab — no page creation needed at all. This is the cleanest option. Want to try that first?
+
+You said: Already uploaded, but no actions triggered when interacting with the buttons.
+Already uploaded, but no actions triggered when interacting with the buttons.
+
+10:00 AM
+Claude responded: This is a known SharePoint limitation — it blocks JavaScript execution in HTML files served from document libraries for security reasons.
+
+Diagnosed SharePoint JavaScript blocking issue, weighed hosting alternatives
+Diagnosed SharePoint JavaScript blocking issue, weighed hosting alternatives
+This is a known SharePoint limitation — it blocks JavaScript execution in HTML files served from document libraries for security reasons. The buttons render but nothing fires because all the JS is silently blocked.
+
+This means SharePoint Documents cannot host interactive HTML pages. You need a real static web host. Here are your options ranked by effort:
+
+Option 1 — Azure Blob Storage (fastest, stays inside Azure)
+You likely already have an Azure subscription via DevOps.
+
+Go to portal.azure.com → search Storage accounts → Create
+Fill in basics → under Advanced tab → enable "Allow enabling anonymous blob access"
+Once created → go to Data management → Static website
+Toggle Enabled → set index document to index.html → Save
+Click Upload → upload your index.html
+Copy the Primary endpoint URL shown — looks like:
+https://<accountname>.z13.web.core.windows.net/
+Paste that URL into Teams → + → Website → Save
+Option 2 — GitHub Pages (free, 3 minutes)
+Go to github.com → New repository → name it 7pace-report → Public → Create
+Upload index.html → Commit
+Settings → Pages → Source: main, folder /(root) → Save
+URL ready in ~60 seconds:
+https://<username>.github.io/7pace-report/
+Option 3 — Azure Static Web Apps (already covered)
+powershell
+az staticwebapp deploy `
+  --name "7pace-weekly-report" `
+  --resource-group "YourRG" `
+  --source "C:\path\to\7pace-standalone"
+Bottom line: Any of these gives you a working URL in under 5 minutes that you paste into Teams as a Website tab. Option 1 is the best fit if you want everything inside your existing Azure/DevOps environment. Which one would you like to go with?
+
+You said: can I use docker for Option 3 — Azure Static Web Apps (already covered)?
+can I use docker for Option 3 — Azure Static Web Apps (already covered)?
+
+10:31 AM
+Claude responded: Not directly — Azure Static Web Apps doesn't use Docker because it's a static file host (no server, no container needed).
+
+Clarified Docker incompatibility with Static Web Apps, explored alternative solutions
+Clarified Docker incompatibility with Static Web Apps, explored alternative solutions
+Not directly — Azure Static Web Apps doesn't use Docker because it's a static file host (no server, no container needed). However you can use Docker in two ways depending on what you're trying to do:
+
+Option A — Use Docker just to run the deployment (no Azure CLI install needed)
+If you don't want to install the Azure CLI on your machine, run it from a Docker container instead:
+
+bash
+docker run -it --rm -v "C:\path\to\7pace-standalone:/app" mcr.microsoft.com/azure-cli az login
+Then deploy:
+
+bash
+docker run -it --rm -v "C:\path\to\7pace-standalone:/app" mcr.microsoft.com/azure-cli \
+  az staticwebapp deploy \
+  --name "7pace-weekly-report" \
+  --resource-group "YourRG" \
+  --source "/app"
+Same result, no local Azure CLI install required.
+
+Option B — Host with Docker properly (Azure Container Apps or App Service)
+If you specifically want a Docker-based deployment, skip Static Web Apps entirely and use a simple nginx container instead:
+
+1 — Create a Dockerfile next to your index.html:
+
+dockerfile
+FROM nginx:alpine
+COPY index.html /usr/share/nginx/html/index.html
+2 — Build and push to Azure Container Registry:
+
+bash
+az acr build \
+  --registry <yourRegistry> \
+  --image 7pace-report:latest .
+3 — Deploy to Azure Container Apps:
+
+bash
+az containerapp create \
+  --name 7pace-weekly-report \
+  --resource-group YourRG \
+  --image <yourRegistry>.azurecr.io/7pace-report:latest \
+  --ingress external \
+  --target-port 80
+4 — Get your URL:
+
+https://7pace-weekly-report.<uniqueid>.azurecontainerapps.io
+Paste that into Teams → + → Website → Save.
+
+Which should you pick?
+Static Web Apps	Docker + Container Apps
+Complexity	Low	Medium
+Cost	Free tier available	Pay per use
+Docker knowledge needed	No	Yes
+Best for	Just hosting a file	You already use Docker in your pipeline
+If your team already uses Docker in your DevOps pipelines, Option B is the natural fit. If not, Azure Static Web Apps is simpler and free. Which fits your setup better?
+
+You said: shows Option 2 — GitHub Pages (free, 3 minutes)
+shows Option 2 — GitHub Pages (free, 3 minutes)
+
+10:32 AM
+Claude responded: Walk through each step with the Next / Back buttons.
+
+Architected interactive walkthrough for GitHub Pages deployment
+Architected interactive walkthrough for GitHub Pages deployment
+
+
+Walk through each step with the Next / Back buttons. Here's the quick summary:
+
+Sign in to github.com — free account, takes 2 minutes if you don't have one
+Create a new repo — name it 7pace-report, set to Public
+Upload index.html — drag and drop, then commit
+Enable GitHub Pages — Settings → Pages → branch main → Save
+Copy your URL — appears in a green banner after ~60 seconds: https://your-username.github.io/7pace-report/
+Paste into Teams — channel → + → Website → paste URL → Save
+The last step links back to the Teams walkthrough from earlier. Once the tab is live, each team member enters their own 7pace API token once on first visit.
+
+You said: Where should I click to upload the index?
+1778086513649_image.png
+Where should I click to upload the index?
+
+12:55 PM
+Claude responded: Click "uploading an existing file" — it's the link in the blue Quick Setup box, in the line that reads:
+
+Pinpointed the upload file link location
+Pinpointed the upload file link location
+Click "uploading an existing file" — it's the link in the blue Quick Setup box, in the line that reads:
+
+"Get started by creating a new file or uploading an existing file"
+
+That takes you directly to the drag-and-drop upload page where you can drop your index.html.
+
+You said: getting error: ❌Error: HTTP 404:
+getting error: ❌Error: HTTP 404:
+
+1:04 PM
+Claude responded: The page loaded fine — the 404 is coming from the 7pace API URL, not GitHub.
+
+Diagnosed API endpoint misconfiguration causing HTTP 404 error
+Diagnosed API endpoint misconfiguration causing HTTP 404 error
+The page loaded fine — the 404 is coming from the 7pace API URL, not GitHub. The default URL in the settings (https://app.7pace.com/api/rest/3.0) is wrong for your organization.
+
+Find your correct API URL — 2 ways:
+
+Option A — Check from Azure DevOps
+
+Open Azure DevOps → your project
+Click Extensions in the left nav → open 7pace Timetracker
+Go to Settings → API Tokens
+The page URL in your browser will show your org's domain, e.g.:
+   https://mycompany.timehub.7pace.com
+Your API base URL would then be:
+
+   https://mycompany.timehub.7pace.com/api/rest/3.0
+Option B — Check from the 7pace app directly
+
+Open 7pace Timetracker inside Azure DevOps
+Look at the browser URL bar — it will show your org's specific domain
+Replace everything after the domain with /api/rest/3.0
+Then update it in the report page:
+
+Click the ⚙ API button (top toolbar of the report)
+Replace the API base URL with your correct one
+Click Save & load report
+What does your Azure DevOps URL look like when you have 7pace open? Something like dev.azure.com/yourorg/... or a custom domain? That will help pinpoint the exact API URL.
+
+You said: this is what I see:
+1778087330735_image.png
+this is what I see:
+
+1:08 PM
+Claude responded: Your API root is https://parabitsystems.
+
+Deciphered API endpoint structure and authentication requirements
+Deciphered API endpoint structure and authentication requirements
+Your API root is https://parabitsystems.timehub.7pace.com/api — this is a timehub instance which uses a different URL format than the default.
+
+Step 1 — Get your Access Token
+
+You can see Access Tokens in the left sidebar. Click it → create a new token → copy it.
+
+Step 2 — Update the report with the correct URL
+
+In the report page click ⚙ API and update:
+
+Field	Value
+API base URL	https://parabitsystems.timehub.7pace.com/api
+API token	(paste the token from Access Tokens)
+Click Save & load report.
+
+If you still get a 404, the timehub API uses a versioned path. Try these two alternatives in order:
+
+https://parabitsystems.timehub.7pace.com/api/rest/3.0
+https://parabitsystems.timehub.7pace.com/api/v3.0
+If you get a CORS error instead of 404 — that's actually progress. It means the URL is correct but the browser is being blocked. The page will automatically show the PowerShell fallback script — run it, paste the JSON back, and the report will render. Want me to update the index.html to use your correct base URL by default so you don't have to configure it every time?
+
+You said: still getting 404
+still getting 404
+
+1:11 PM
+Claude responded: Looking at your screenshot again, the API root URL has a query parameter in it — it's cut off in the screenshot.
+
+Investigated API endpoint structure and URL formatting issues
+Investigated API endpoint structure and URL formatting issues
+Looking at your screenshot again, the API root URL has a query parameter in it — it's cut off in the screenshot. Let me get the exact full URL.
+
+Step 1 — Copy the full API root URL
+
+In that Reporting & API screen, click the copy icon (📋) next to the URL field. It will copy the full URL including the ?api-version=... part that's hidden.
+
+Paste it here or in a notepad so you can see the full string — it likely looks something like:
+
+https://parabitsystems.timehub.7pace.com/api?api-version=3.0
+Step 2 — Try these URLs in the report one by one
+
+The timehub API root uses ?api-version= instead of a path. So the workLogs endpoint is likely:
+
+https://parabitsystems.timehub.7pace.com/api
+https://parabitsystems.timehub.7pace.com/api/rest/3.0
+https://parabitsystems.timehub.7pace.com/api/v1
+Step 3 — Also click Access Tokens first
+
+Before testing, click Access Tokens in that same left sidebar and make sure you have a valid token created. The 404 could also be an auth issue returning the wrong error code.
+
+Can you paste the full copied URL from that copy button? That will give us the exact correct base URL to use.
+
+You said: this is the screen of the other tab "Reporting API":
+1778087564742_image.png
+this is the screen of the other tab "Reporting API":
+
+1:12 PM
+Claude responded: This is the key — your instance uses the OData API, not the REST API.
+
+Identified OData API discrepancy and recalibrated endpoint configuration
+Identified OData API discrepancy and recalibrated endpoint configuration
+This is the key — your instance uses the OData API, not the REST API. That's why you're getting 404. The URL and field format are completely different.
+
+I need to update your index.html to work with the OData endpoint. Let me regenerate it now.
+
+
+Deciphered OData API structure and mapped integration requirements
+Deciphered OData API structure and mapped integration requirements
+Now I can see exactly what needs to change. The OData API uses different field names (Timestamp not timestamp, Length not length, User.DisplayName not user.displayName) and a different endpoint format. Let me patch the file.
+
+
+Edited 5 files, viewed 3 files, ran a command
+Edited 5 files, viewed 3 files, ran a command
+Three things changed in this updated file:
+
+1 — API URL is now pre-filled with your correct OData endpoint:
+
+https://parabitsystems.timehub.7pace.com/api/odata/v3.2
+2 — Endpoint now calls /WorkLogs (OData) instead of /workLogs (REST), and the date filter no longer wraps dates in quotes — OData requires bare datetime values.
+
+3 — Field mapping now reads OData's PascalCase fields (Timestamp, Length, User.DisplayName) while still falling back to REST camelCase in case you switch instances later.
+
+What to do now:
+
+Download the updated index.html above
+Go to your GitHub repo (cristhian-fierro/7pace-report)
+Click index.html → click the pencil ✎ edit icon → delete all content → paste the new file content → Commit changes
+In the report settings use:
+URL: https://parabitsystems.timehub.7pace.com/api/odata/v3.2
+Token: the token shown on that Reporting & API screen you shared
+
+Index
+Code · HTML 
+You said: getting error: ❌Error: HTTP 404: {"statusCode":404,"errorCode":"NotFound","errorDescription":"Resource not found"}
+getting error: ❌Error: HTTP 404: {"statusCode":404,"errorCode":"NotFound","errorDescription":"Resource not found"}
+
+1:17 PM
+Claude responded: The server is responding with JSON, which means the URL base is correct — but the entity name WorkLogs is wrong for your instance.
+
+Investigated incorrect endpoint path and discovered metadata discovery solution
+Investigated incorrect endpoint path and discovered metadata discovery solution
+The server is responding with JSON, which means the URL base is correct — but the entity name WorkLogs is wrong for your instance. Let me find the correct one by querying the OData metadata endpoint.
+
+Run this in PowerShell to discover all available endpoints:
+
+powershell
+$headers = @{
+  "Authorization" = "Bearer YOUR_TOKEN_HERE"
+  "Content-Type"  = "application/json"
+}
+
+# Get the OData service document — lists all available entity sets
+$url = "https://parabitsystems.timehub.7pace.com/api/odata/v3.2"
+$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+$result.value | Select-Object name, url | Format-Table
+Replace YOUR_TOKEN_HERE with your token from the Reporting & API screen.
+
+This will print a table like:
+
+name          url
+----          ---
+Times         Times
+Users         Users
+Projects      Projects
+...
+Paste the output here and I'll update the index.html with the exact correct entity name.
+
+Alternatively, try these three URLs directly in your browser (with the token in the header via PowerShell):
+
+powershell
+# Try each of these — whichever doesn't return 404 is the right one
+Invoke-RestMethod -Uri "https://parabitsystems.timehub.7pace.com/api/odata/v3.2/Times" -Headers $headers
+Invoke-RestMethod -Uri "https://parabitsystems.timehub.7pace.com/api/odata/v3.2/WorkLogs" -Headers $headers  
+Invoke-RestMethod -Uri "https://parabitsystems.timehub.7pace.com/api/odata/v3.2/TimeEntries" -Headers $headers
+Which one returns data instead of 404?
+
+You said: after running the ps script, out:
+after running the ps script, out:
+name                        url
+----                        ---
+workLogsOnly                workLogsOnly
+budgets                     budgets
+workLogsWorkItems           workLogsWorkItems
+workItemsHierarchy          workItemsHierarchy
+workItemsHierarchyAllLevels workItemsHierarchyAllLevels
+workItems                   workItems
+
+1:19 PM
+Claude responded: The entity is workLogsOnly.
+
+Identified correct entity endpoint and reconciled field naming conventions
+Identified correct entity endpoint and reconciled field naming conventions
+The entity is workLogsOnly. Let me update the file right now.
+
+
+Edited 2 files
+Edited 2 files
+Now let me also check what fields workLogsOnly actually returns by running a quick discovery first — and update the aggregate to handle all possible field name variants:
+
+
+Update aggregate to handle all workLogsOnly field name variants
+Update aggregate to handle all workLogsOnly field name variants
+Now add a debug helper that logs the first raw entry so we can see the exact field names if something still doesn't render:
+
+
+Edited a file, ran a command, read a file
+Edited a file, ran a command, read a file
+Download the updated index.html, replace it in your GitHub repo (click the file → pencil icon → select all → paste → commit), then try loading the report again.
+
+If it still shows no data (but no error), open browser DevTools → Console (F12) and look for the line starting with [7pace debug] first entry fields: — paste that output here and I'll instantly know the exact field names and fix the mapping in one shot.
+
+Also run this in PowerShell to confirm workLogsOnly returns data:
+
+powershell
+$headers = @{ "Authorization" = "Bearer YOUR_TOKEN" }
+$filter  = "timestamp ge 2026-04-28T00:00:00Z and timestamp lt 2026-05-05T00:00:00Z"
+$url     = "https://parabitsystems.timehub.7pace.com/api/odata/v3.2/workLogsOnly?`$filter=" + [uri]::EscapeDataString($filter) + "&`$top=5"
+Invoke-RestMethod -Uri $url -Headers $headers | ConvertTo-Json -Depth 5
+
+Index
+Code · HTML 
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+Index · HTML
+Copy
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,7 +771,7 @@ body {
   font-size: 14px;
   line-height: 1.5;
 }
-
+ 
 /* ── Topbar ───────────────────────────────────────────────── */
 .topbar {
   background: var(--text);
@@ -80,10 +811,10 @@ body {
   font-family: var(--mono);
   letter-spacing: .02em;
 }
-
+ 
 /* ── Layout ───────────────────────────────────────────────── */
 .page { max-width: 1200px; margin: 0 auto; padding: 28px 28px 60px; }
-
+ 
 /* ── Config panel ─────────────────────────────────────────── */
 .config-card {
   background: var(--surface);
@@ -175,7 +906,7 @@ body {
   padding-top: 18px;
   border-top: 1px solid var(--border);
 }
-
+ 
 /* ── Controls bar ─────────────────────────────────────────── */
 .controls {
   display: flex;
@@ -270,7 +1001,7 @@ body {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(0,87,184,.12);
 }
-
+ 
 /* ── Status messages ──────────────────────────────────────── */
 .status {
   padding: 12px 16px;
@@ -288,7 +1019,7 @@ body {
 .status-error   { background: #fdecea;           color: var(--red);   border: 1px solid #f5c5c0; }
 .status-success { background: var(--green-bg);   color: var(--green); border: 1px solid #b0dfc0; }
 .hidden { display: none !important; }
-
+ 
 /* ── Metrics row ──────────────────────────────────────────── */
 .metrics {
   display: grid;
@@ -318,7 +1049,7 @@ body {
   text-transform: uppercase;
   letter-spacing: .05em;
 }
-
+ 
 /* ── Table ────────────────────────────────────────────────── */
 .table-card {
   background: var(--surface);
@@ -394,7 +1125,7 @@ tbody tr:hover td { background: #fafaf8; }
 .pill-tot { background: #ebe9ff; color: #3d1fa8; font-weight: 600; }
 .zero { color: var(--faint); }
 .weekend-col { opacity: .65; }
-
+ 
 /* ── CORS fallback ────────────────────────────────────────── */
 .fallback-card {
   background: var(--surface);
@@ -457,7 +1188,7 @@ textarea.json-paste {
   margin-bottom: 10px;
 }
 textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,87,184,.12); }
-
+ 
 /* ── Loading overlay ──────────────────────────────────────── */
 .loading-overlay {
   display: none;
@@ -481,14 +1212,14 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-label { font-size: 13px; color: var(--muted); }
-
+ 
 /* ── Animations ───────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-up { animation: fadeUp .25s ease forwards; }
-
+ 
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 768px) {
   .page { padding: 16px; }
@@ -500,13 +1231,13 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 </style>
 </head>
 <body>
-
+ 
 <!-- Loading overlay -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
   <div class="loading-label">Fetching timesheet data…</div>
 </div>
-
+ 
 <!-- Topbar -->
 <header class="topbar">
   <div class="topbar-logo">
@@ -523,9 +1254,9 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
   <div class="topbar-spacer"></div>
   <div class="topbar-week" id="topbarWeek"></div>
 </header>
-
+ 
 <main class="page">
-
+ 
   <!-- Config card -->
   <div class="config-card" id="configCard">
     <div class="config-head" id="configToggle">
@@ -572,13 +1303,13 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
       </div>
     </div>
   </div>
-
+ 
   <!-- Status message -->
   <div class="status hidden" id="statusMsg">
     <span class="status-icon" id="statusIcon"></span>
     <span id="statusText"></span>
   </div>
-
+ 
   <!-- CORS fallback -->
   <div class="fallback-card" id="corsHelp">
     <div class="fallback-title">
@@ -599,7 +1330,7 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
       Render from JSON
     </button>
   </div>
-
+ 
   <!-- Controls bar -->
   <div class="controls" id="controlsBar">
     <div class="week-nav">
@@ -623,10 +1354,10 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
       </button>
     </div>
   </div>
-
+ 
   <!-- Metrics -->
   <div class="metrics hidden" id="metricsRow"></div>
-
+ 
   <!-- Report table -->
   <div class="table-card hidden" id="tableCard">
     <div class="table-card-header">
@@ -643,26 +1374,26 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
       </table>
     </div>
   </div>
-
+ 
 </main>
-
+ 
 <script>
 /* ── Config persistence ───────────────────────────────────── */
 const LS_KEY = "7pace_report_config";
-
+ 
 function loadConfig() {
   try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
 }
 function saveConfig(cfg) {
   localStorage.setItem(LS_KEY, JSON.stringify(cfg));
 }
-
+ 
 const cfg = loadConfig();
 if (cfg.apiUrl)      document.getElementById("apiUrl").value      = cfg.apiUrl;
 if (cfg.apiToken)    document.getElementById("apiToken").value    = cfg.apiToken;
 if (cfg.userFilter)  document.getElementById("savedFilter").value = cfg.userFilter;
 if (cfg.maxEntries)  document.getElementById("maxEntries").value  = cfg.maxEntries;
-
+ 
 /* ── Helpers ──────────────────────────────────────────────── */
 const DAYS   = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const COLORS = [
@@ -670,9 +1401,9 @@ const COLORS = [
   ["#fff3cd","#7a4a00"], ["#fde8e8","#c0392b"], ["#e0f7f4","#0d6e5a"],
   ["#fce8f6","#8b0070"], ["#e8f5e9","#1b6e3a"],
 ];
-
+ 
 let lastEntries = [], lastDays = [], currentMonday = getMonday(new Date());
-
+ 
 function getMonday(d) {
   const dt = new Date(d); dt.setHours(0,0,0,0);
   const day = dt.getDay();
@@ -683,14 +1414,14 @@ function toISO(d)      { return d.toISOString().slice(0, 10); }
 function addDays(d, n) { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt; }
 function fmtDate(d)    { return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
 function initials(n)   { return n.split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase(); }
-
+ 
 function setWeekInput(monday) {
   document.getElementById("weekInput").value = toISO(monday);
   const end = addDays(monday, 6);
   document.getElementById("topbarWeek").textContent = fmtDate(monday) + " – " + fmtDate(end);
 }
 setWeekInput(currentMonday);
-
+ 
 /* ── Config toggle ────────────────────────────────────────── */
 let configOpen = !cfg.apiToken;
 function syncConfigUI() {
@@ -703,7 +1434,7 @@ function syncConfigUI() {
 }
 syncConfigUI();
 document.getElementById("configToggle").addEventListener("click", () => { configOpen = !configOpen; syncConfigUI(); });
-
+ 
 document.getElementById("saveConfigBtn").addEventListener("click", () => {
   const newCfg = {
     apiUrl:     document.getElementById("apiUrl").value.trim().replace(/\/$/, ""),
@@ -717,13 +1448,13 @@ document.getElementById("saveConfigBtn").addEventListener("click", () => {
   configOpen = false; syncConfigUI();
   loadReport(currentMonday);
 });
-
+ 
 document.getElementById("clearConfigBtn").addEventListener("click", () => {
   localStorage.removeItem(LS_KEY);
   document.getElementById("apiToken").value = "";
   showStatus("Saved token cleared.", "info");
 });
-
+ 
 /* ── Status helpers ───────────────────────────────────────── */
 function showStatus(text, type) {
   const icons = { info:"ℹ️", warn:"⚠️", error:"❌", success:"✅" };
@@ -734,12 +1465,12 @@ function showStatus(text, type) {
   el.classList.remove("hidden");
 }
 function hideStatus() { document.getElementById("statusMsg").classList.add("hidden"); }
-
+ 
 /* ── PowerShell script builder ────────────────────────────── */
 function buildPsScript(url, token, start, end, top) {
-  return `$headers = @{\n  "Authorization" = "Bearer ${token}"\n  "Content-Type"  = "application/json"\n}\n$filter = "Timestamp ge ${start}T00:00:00Z and Timestamp lt ${end}T00:00:00Z"\n$url    = "${url}/WorkLogs?\$filter=" + [uri]::EscapeDataString($filter) + "&\$expand=User&\$top=${top}"\n$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get\n$result | ConvertTo-Json -Depth 10 | Set-Clipboard\nWrite-Host "Done — JSON copied to clipboard!"`;
+  return `$headers = @{\n  "Authorization" = "Bearer ${token}"\n  "Content-Type"  = "application/json"\n}\n$filter = "timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z"\n$url    = "${url}/workLogsOnly?\$filter=" + [uri]::EscapeDataString($filter) + "&\$top=${top}"\n$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get\n$result | ConvertTo-Json -Depth 10 | Set-Clipboard\nWrite-Host "Done — JSON copied to clipboard!"`;
 }
-
+ 
 /* ── Fetch (OData API) ────────────────────────────────────── */
 async function fetchEntries(monday) {
   const url   = (cfg.apiUrl || "https://parabitsystems.timehub.7pace.com/api/odata/v3.2").replace(/\/$/, "");
@@ -747,54 +1478,65 @@ async function fetchEntries(monday) {
   const start = toISO(monday);
   const end   = toISO(addDays(monday, 7));
   const top   = cfg.maxEntries || 5000;
-
-  /* OData uses PascalCase field names and no quotes around datetime values */
-  const filter   = `Timestamp ge ${start}T00:00:00Z and Timestamp lt ${end}T00:00:00Z`;
-  const endpoint = `${url}/WorkLogs?$filter=${encodeURIComponent(filter)}&$expand=User&$top=${top}`;
-
+ 
+  /* 7pace timehub OData — entity: workLogsOnly, datetime fields: camelCase, no quotes */
+  const filter   = `timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z`;
+  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}`;
+ 
   const resp = await fetch(endpoint, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
   });
-
+ 
   if (!resp.ok) { const b = await resp.text(); throw new Error(`HTTP ${resp.status}: ${b.slice(0,300)}`); }
   const data = await resp.json();
   /* OData wraps results in a "value" array */
-  return Array.isArray(data) ? data : (data.value || data.data || []);
+  const entries = Array.isArray(data) ? data : (data.value || data.data || []);
+  /* Debug: log first entry so field names are visible in browser console */
+  if (entries.length > 0) console.log("[7pace debug] first entry fields:", JSON.stringify(entries[0], null, 2));
+  return entries;
 }
-
-/* ── Aggregate (handles both OData PascalCase and REST camelCase) ── */
+ 
+/* ── Aggregate (handles workLogsOnly OData schema) ─────────── */
 function aggregate(entries, days) {
   const filterVal = (document.getElementById("filterInput").value.trim() || cfg.userFilter || "").toLowerCase();
   const userMap   = {};
   entries.forEach(e => {
-    /* OData: User.DisplayName | REST: user.displayName */
-    const name = e.User?.DisplayName || e.User?.Name || e.user?.displayName || e.user?.name || e.userId || "Unknown";
+    /* workLogsOnly flattens user fields at top level */
+    const name = e.userDisplayName
+              || e.UserDisplayName
+              || e.User?.DisplayName
+              || e.user?.displayName
+              || e.userName
+              || e.UserName
+              || e.userId
+              || e.UserId
+              || "Unknown";
     if (filterVal && !name.toLowerCase().includes(filterVal)) return;
-    /* OData: Timestamp | REST: timestamp / date / startTime */
-    const rawTs  = e.Timestamp || e.timestamp || e.date || e.startTime;
+    /* datetime field */
+    const rawTs = e.timestamp || e.Timestamp || e.date || e.Date || e.startTime;
     if (!rawTs) return;
     const dateStr = toISO(new Date(rawTs));
     if (!days.includes(dateStr)) return;
     if (!userMap[name]) userMap[name] = {};
-    /* OData: Length (seconds) | REST: length / duration */
-    const secs = e.Length || e.length || e.duration || 0;
+    /* duration in seconds */
+    const secs = e.length || e.Length || e.duration || e.Duration || e.seconds || e.Seconds || 0;
     userMap[name][dateStr] = (userMap[name][dateStr] || 0) + secs;
   });
   return userMap;
 }
-
+ 
 /* ── Render ───────────────────────────────────────────────── */
 function renderReport(entries, monday) {
   const days = Array.from({ length: 7 }, (_, i) => toISO(addDays(monday, i)));
   lastEntries = entries; lastDays = days;
-
+ 
   const userMap      = aggregate(entries, days);
   const users        = Object.keys(userMap).sort();
   const totalsByDay  = {};
   days.forEach(d => (totalsByDay[d] = 0));
   let grand = 0;
   users.forEach(u => days.forEach(d => { const v = userMap[u][d]||0; totalsByDay[d]+=v; grand+=v; }));
-
+ 
   /* Metrics */
   const avgHrs = users.length ? ((grand/3600)/users.length).toFixed(1) : "—";
   document.getElementById("metricsRow").innerHTML = [
@@ -806,13 +1548,13 @@ function renderReport(entries, monday) {
     `<div class="metric-card fade-up"><div class="metric-val">${v}</div><div class="metric-label">${l}</div></div>`
   ).join("");
   document.getElementById("metricsRow").classList.remove("hidden");
-
+ 
   /* Table subheader */
   const endDay = addDays(monday, 6);
   document.getElementById("tableCardSub").textContent = fmtDate(monday) + " – " + fmtDate(endDay);
   document.getElementById("entryCount").textContent   = entries.length + " entries";
   document.getElementById("topbarWeek").textContent   = fmtDate(monday) + " – " + fmtDate(endDay);
-
+ 
   /* Head */
   let head = "<tr><th>User</th>";
   days.forEach((d, i) => {
@@ -822,7 +1564,7 @@ function renderReport(entries, monday) {
   });
   head += "<th>Total</th></tr>";
   document.getElementById("tableHead").innerHTML = head;
-
+ 
   /* Body */
   let body = "";
   users.forEach((u, ui) => {
@@ -840,7 +1582,7 @@ function renderReport(entries, monday) {
     });
     body += `<td><span class="pill pill-tot">${(rowTotal/3600).toFixed(1)}h</span></td></tr>`;
   });
-
+ 
   /* Totals row */
   body += `<tr class="total-row"><td><strong>Total</strong></td>`;
   days.forEach((d, di) => {
@@ -849,12 +1591,12 @@ function renderReport(entries, monday) {
     body += `<td${cls}>${v>0 ? `<strong>${(v/3600).toFixed(1)}h</strong>` : `<span class="zero">—</span>`}</td>`;
   });
   body += `<td><strong>${(grand/3600).toFixed(1)}h</strong></td></tr>`;
-
+ 
   document.getElementById("tableBody").innerHTML = body;
   document.getElementById("tableCard").classList.remove("hidden");
   document.getElementById("tableCard").classList.add("fade-up");
 }
-
+ 
 /* ── Load cycle ───────────────────────────────────────────── */
 async function loadReport(monday) {
   if (!cfg.apiToken) {
@@ -890,7 +1632,7 @@ async function loadReport(monday) {
     document.getElementById("loadingOverlay").classList.remove("active");
   }
 }
-
+ 
 /* ── Controls wiring ──────────────────────────────────────── */
 document.getElementById("prevWeek").addEventListener("click", () => {
   currentMonday = addDays(currentMonday, -7);
@@ -918,13 +1660,13 @@ document.getElementById("weekInput").addEventListener("change", e => {
 });
 document.getElementById("loadBtn").addEventListener("click", () => loadReport(currentMonday));
 document.getElementById("filterInput").addEventListener("keydown", e => { if (e.key === "Enter") loadReport(currentMonday); });
-
+ 
 /* ── Copy script ──────────────────────────────────────────── */
 document.getElementById("copyScriptBtn").addEventListener("click", () => {
   navigator.clipboard.writeText(document.getElementById("psScriptContent").textContent)
     .then(() => { document.getElementById("copyScriptBtn").textContent = "Copied!"; setTimeout(()=>{ document.getElementById("copyScriptBtn").textContent="Copy"; }, 2000); });
 });
-
+ 
 /* ── Parse pasted JSON ────────────────────────────────────── */
 document.getElementById("parseJsonBtn").addEventListener("click", () => {
   const raw = document.getElementById("rawJson").value.trim();
@@ -938,7 +1680,7 @@ document.getElementById("parseJsonBtn").addEventListener("click", () => {
     showStatus("Invalid JSON: " + e.message, "error");
   }
 });
-
+ 
 /* ── CSV export ───────────────────────────────────────────── */
 document.getElementById("exportCsvBtn").addEventListener("click", () => {
   if (!lastEntries.length) { showStatus("Load a report first before exporting.", "warn"); return; }
@@ -957,9 +1699,10 @@ document.getElementById("exportCsvBtn").addEventListener("click", () => {
   a.download = "7pace_weekly_" + toISO(currentMonday) + ".csv";
   a.click();
 });
-
+ 
 /* ── Auto-load if token already saved ─────────────────────── */
 if (cfg.apiToken) { loadReport(currentMonday); }
 </script>
 </body>
 </html>
+ 
