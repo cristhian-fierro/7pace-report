@@ -884,7 +884,7 @@ async function fetchEntries(monday) {
   const top   = cfg.maxEntries || 5000;
 
   const filter   = `timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z`;
-  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}&$expand=User`;
+  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}`;
 
   const resp = await fetch(endpoint, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
