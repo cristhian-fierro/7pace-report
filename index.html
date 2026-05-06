@@ -788,6 +788,17 @@ const COLORS = [
 let lastEntries = [], lastDays = [], lastUserNameMap = {}, currentMonday = getMonday(new Date());
 let selectedUsers = null; // null = all selected; Set of names = filtered
 
+const SWQA_TEAM = new Set([
+  "Akash Gosh",
+  "Aswin Devasahayam",
+  "Cristhian Fierro",
+  'Dongke "Clark" Wu',
+  "Jerwin Justin",
+  "Kayalvizhi Krishnamoorthy",
+  "Md Bhuiyan",
+  "Saravana Subramony",
+]);
+
 function getMonday(d) {
   const dt = new Date(d); dt.setHours(0,0,0,0);
   const day = dt.getDay();
@@ -1177,9 +1188,12 @@ function updateUserSelectLabel() {
 
 function populateUserSelect() {
   userSelectBtn.disabled = false;
-  selectedUsers = null;
+  const available = allUserNames();
+  const qaInData  = available.filter(n => SWQA_TEAM.has(n));
+  selectedUsers   = qaInData.length > 0 ? new Set(qaInData) : null;
   updateUserSelectLabel();
   renderUserItems("");
+  if (selectedUsers !== null) applyUserFilter();
 }
 
 function applyUserFilter() {
