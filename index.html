@@ -252,24 +252,86 @@ body {
 .btn-primary:hover { background: #004fa6; border-color: #004fa6; }
 .btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
 .controls-right { margin-left: auto; display: flex; gap: 8px; }
-.filter-input {
-  height: 38px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--rad-md);
-  font-family: var(--font);
-  font-size: 13px;
-  color: var(--text);
-  background: var(--surface);
-  outline: none;
-  width: 180px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.05);
-  transition: border-color .15s, box-shadow .15s;
+
+/* ── User multi-select ────────────────────────────────────── */
+.user-select-wrap { position: relative; }
+.user-select-btn {
+  min-width: 160px;
+  justify-content: space-between;
+  gap: 8px;
 }
-.filter-input:focus {
+.user-select-btn.active {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(0,87,184,.12);
 }
+.user-select-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 300;
+  background: var(--surface);
+  border: 1px solid var(--border-md);
+  border-radius: var(--rad-md);
+  box-shadow: 0 4px 20px rgba(0,0,0,.13);
+  width: 240px;
+  display: none;
+  flex-direction: column;
+}
+.user-select-panel.open { display: flex; }
+.user-select-search {
+  padding: 10px 10px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.user-select-search input {
+  width: 100%;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  font-family: var(--font);
+  font-size: 12.5px;
+  color: var(--text);
+  background: #fafaf8;
+  outline: none;
+  transition: border-color .15s;
+}
+.user-select-search input:focus { border-color: var(--accent); }
+.user-select-actions {
+  display: flex;
+  gap: 6px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.user-select-actions button {
+  font-size: 11px;
+  padding: 2px 8px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all .12s;
+}
+.user-select-actions button:hover { border-color: var(--border-md); color: var(--text); }
+.user-select-list {
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+.user-select-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background .1s;
+}
+.user-select-item:hover { background: var(--bg); }
+.user-select-item input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; flex-shrink: 0; cursor: pointer; }
+.user-select-item label { cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Status messages ──────────────────────────────────────── */
 .status {
@@ -645,7 +707,23 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
     <button class="btn btn-sm" id="thisWeekBtn">This week</button>
     <button class="btn btn-sm" id="lastWeekBtn">Last week</button>
     <div class="sep"></div>
-    <input type="text" class="filter-input" id="filterInput" placeholder="&#128269; Filter by user…">
+    <div class="user-select-wrap" id="userSelectWrap">
+      <button class="btn user-select-btn" id="userSelectBtn" disabled>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span id="userSelectLabel">All users</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="user-select-panel" id="userSelectPanel">
+        <div class="user-select-search">
+          <input type="text" id="userSearchInput" placeholder="Search…">
+        </div>
+        <div class="user-select-actions">
+          <button id="selectAllBtn">All</button>
+          <button id="selectNoneBtn">None</button>
+        </div>
+        <div class="user-select-list" id="userSelectList"></div>
+      </div>
+    </div>
     <div class="sep"></div>
     <button class="btn btn-primary" id="loadBtn">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -707,7 +785,8 @@ const COLORS = [
   ["#fce8f6","#8b0070"], ["#e8f5e9","#1b6e3a"],
 ];
 
-let lastEntries = [], lastDays = [], currentMonday = getMonday(new Date());
+let lastEntries = [], lastDays = [], lastUserNameMap = {}, currentMonday = getMonday(new Date());
+let selectedUsers = null; // null = all selected; Set of names = filtered
 
 function getMonday(d) {
   const dt = new Date(d); dt.setHours(0,0,0,0);
@@ -776,6 +855,26 @@ function buildPsScript(url, token, start, end, top) {
   return `$headers = @{\n  "Authorization" = "Bearer ${token}"\n  "Content-Type"  = "application/json"\n}\n$filter = "timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z"\n$url    = "${url}/workLogsOnly?\$filter=" + [uri]::EscapeDataString($filter) + "&\$top=${top}"\n$result = Invoke-RestMethod -Uri $url -Headers $headers -Method Get\n$result | ConvertTo-Json -Depth 10 | Set-Clipboard\nWrite-Host "Done — JSON copied to clipboard!"`;
 }
 
+/* ── Fetch users (id → displayName map) ───────────────────── */
+async function fetchUsers(url, token) {
+  try {
+    const resp = await fetch(`${url}/Users?$select=id,displayName`, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+    });
+    if (!resp.ok) return {};
+    const data = await resp.json();
+    const list = Array.isArray(data) ? data : (data.value || data.data || []);
+    const map  = {};
+    list.forEach(u => {
+      const id   = u.id || u.Id || u.userId || u.UserId;
+      const name = u.displayName || u.DisplayName || u.name || u.Name || u.email || id;
+      if (id) map[id] = name;
+    });
+    console.log("[7pace debug] users fetched:", Object.keys(map).length);
+    return map;
+  } catch { return {}; }
+}
+
 /* ── Fetch (OData API) ────────────────────────────────────── */
 async function fetchEntries(monday) {
   const url   = (cfg.apiUrl || "https://parabitsystems.timehub.7pace.com/api/odata/v3.2").replace(/\/$/, "");
@@ -784,57 +883,53 @@ async function fetchEntries(monday) {
   const end   = toISO(addDays(monday, 7));
   const top   = cfg.maxEntries || 5000;
 
-  /* 7pace timehub OData — entity: workLogsOnly, datetime fields: camelCase, no quotes */
   const filter   = `timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z`;
-  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}&$expand=User`;
+  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}`;
 
   const resp = await fetch(endpoint, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
   });
 
   if (!resp.ok) { const b = await resp.text(); throw new Error(`HTTP ${resp.status}: ${b.slice(0,300)}`); }
-  const data = await resp.json();
-  /* OData wraps results in a "value" array */
+  const data    = await resp.json();
   const entries = Array.isArray(data) ? data : (data.value || data.data || []);
-  /* Debug: log first entry so field names are visible in browser console */
-  if (entries.length > 0) console.log("[7pace debug] first entry fields:", JSON.stringify(entries[0], null, 2));
+  if (entries.length > 0) console.log("[7pace debug] first entry:", JSON.stringify(entries[0], null, 2));
   return entries;
 }
 
 /* ── Aggregate (handles workLogsOnly OData schema) ─────────── */
-function aggregate(entries, days) {
-  const filterVal = (document.getElementById("filterInput").value.trim() || cfg.userFilter || "").toLowerCase();
-  const userMap   = {};
+function aggregate(entries, days, userNameMap = {}) {
+  const userMap = {};
   entries.forEach(e => {
-    /* workLogsOnly flattens user fields at top level */
-    const name = e.User?.displayName
-              || e.User?.DisplayName
+    /* Resolve display name: try the Users map first, then any embedded field */
+    const uid  = e.userId || e.UserId || e.userID || e.UserID || "";
+    const name = (uid && userNameMap[uid])
+              || e.User?.displayName || e.User?.DisplayName
               || e.user?.displayName
-              || e.userDisplayName
-              || e.UserDisplayName
-              || e.userName
-              || e.UserName
-              || "Unknown";
-    if (filterVal && !name.toLowerCase().includes(filterVal)) return;
-    /* datetime field */
+              || e.userDisplayName   || e.UserDisplayName
+              || e.userName          || e.UserName
+              || uid || "Unknown";
+    if (selectedUsers !== null && !selectedUsers.has(name)) return;
+    /* Slice date directly from ISO string to avoid local-timezone shift */
     const rawTs = e.timestamp || e.Timestamp || e.date || e.Date || e.startTime;
     if (!rawTs) return;
-    const dateStr = toISO(new Date(rawTs));
+    const dateStr = typeof rawTs === "string" ? rawTs.slice(0, 10) : toISO(new Date(rawTs));
     if (!days.includes(dateStr)) return;
     if (!userMap[name]) userMap[name] = {};
-    /* duration in seconds */
-    const secs = e.length || e.Length || e.duration || e.Duration || e.seconds || e.Seconds || 0;
-    userMap[name][dateStr] = (userMap[name][dateStr] || 0) + secs;
+    /* Duration: 7pace stores seconds in `length`; also try other common names */
+    const secs = e.length ?? e.Length ?? e.duration ?? e.Duration
+              ?? e.workLength ?? e.WorkLength ?? e.seconds ?? e.Seconds ?? 0;
+    userMap[name][dateStr] = (userMap[name][dateStr] || 0) + Number(secs);
   });
   return userMap;
 }
 
 /* ── Render ───────────────────────────────────────────────── */
-function renderReport(entries, monday) {
+function renderReport(entries, monday, userNameMap = {}) {
   const days = Array.from({ length: 7 }, (_, i) => toISO(addDays(monday, i)));
-  lastEntries = entries; lastDays = days;
+  lastEntries = entries; lastDays = days; lastUserNameMap = userNameMap;
 
-  const userMap      = aggregate(entries, days);
+  const userMap      = aggregate(entries, days, userNameMap);
   const users        = Object.keys(userMap).sort();
   const totalsByDay  = {};
   days.forEach(d => (totalsByDay[d] = 0));
@@ -921,15 +1016,18 @@ async function loadReport(monday) {
   hideStatus();
   document.getElementById("corsHelp").style.display = "none";
   document.getElementById("loadingOverlay").classList.add("active");
+  const url   = (cfg.apiUrl || "https://parabitsystems.timehub.7pace.com/api/odata/v3.2").replace(/\/$/, "");
+  const token = cfg.apiToken || "";
   try {
-    const entries = await fetchEntries(monday);
+    const [entries, userNameMap] = await Promise.all([fetchEntries(monday), fetchUsers(url, token)]);
     if (!entries.length) {
       showStatus("No time entries found for this week. Try a different week or check your filter.", "info");
       document.getElementById("tableCard").classList.add("hidden");
       document.getElementById("metricsRow").classList.add("hidden");
       document.getElementById("metricsDailyRow").classList.add("hidden");
     } else {
-      renderReport(entries, monday);
+      renderReport(entries, monday, userNameMap);
+      populateUserSelect();
       hideStatus();
     }
   } catch (err) {
@@ -974,7 +1072,107 @@ document.getElementById("weekInput").addEventListener("change", e => {
   setWeekInput(currentMonday);
 });
 document.getElementById("loadBtn").addEventListener("click", () => loadReport(currentMonday));
-document.getElementById("filterInput").addEventListener("keydown", e => { if (e.key === "Enter") loadReport(currentMonday); });
+
+/* ── User multi-select ────────────────────────────────────── */
+const userSelectBtn   = document.getElementById("userSelectBtn");
+const userSelectPanel = document.getElementById("userSelectPanel");
+const userSelectList  = document.getElementById("userSelectList");
+const userSelectLabel = document.getElementById("userSelectLabel");
+const userSearchInput = document.getElementById("userSearchInput");
+
+userSelectBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  const isOpen = userSelectPanel.classList.toggle("open");
+  userSelectBtn.classList.toggle("active", isOpen);
+  if (isOpen) { userSearchInput.value = ""; renderUserItems(""); userSearchInput.focus(); }
+});
+
+document.addEventListener("click", e => {
+  if (!document.getElementById("userSelectWrap").contains(e.target)) {
+    userSelectPanel.classList.remove("open");
+    userSelectBtn.classList.remove("active");
+  }
+});
+
+userSearchInput.addEventListener("input", () => renderUserItems(userSearchInput.value.trim().toLowerCase()));
+
+document.getElementById("selectAllBtn").addEventListener("click", () => {
+  selectedUsers = null;
+  syncCheckboxes();
+  applyUserFilter();
+});
+document.getElementById("selectNoneBtn").addEventListener("click", () => {
+  selectedUsers = new Set();
+  syncCheckboxes();
+  applyUserFilter();
+});
+
+function allUserNames() {
+  if (!lastEntries.length) return [];
+  const names = new Set();
+  lastEntries.forEach(e => {
+    const uid  = e.userId || e.UserId || e.userID || e.UserID || "";
+    const name = (uid && lastUserNameMap[uid])
+              || e.User?.displayName || e.User?.DisplayName
+              || e.user?.displayName
+              || e.userDisplayName   || e.UserDisplayName
+              || e.userName          || e.UserName
+              || uid || "Unknown";
+    names.add(name);
+  });
+  return [...names].sort();
+}
+
+function renderUserItems(search) {
+  const names = allUserNames().filter(n => !search || n.toLowerCase().includes(search));
+  userSelectList.innerHTML = names.map(name => {
+    const checked = selectedUsers === null || selectedUsers.has(name);
+    const id = "uc_" + name.replace(/\W/g, "_");
+    return `<div class="user-select-item">
+      <input type="checkbox" id="${id}" data-name="${name}" ${checked ? "checked" : ""}>
+      <label for="${id}">${name}</label>
+    </div>`;
+  }).join("");
+  userSelectList.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const name = cb.dataset.name;
+      if (selectedUsers === null) selectedUsers = new Set(allUserNames());
+      if (cb.checked) selectedUsers.add(name); else selectedUsers.delete(name);
+      if (selectedUsers.size === allUserNames().length) selectedUsers = null;
+      updateUserSelectLabel();
+      applyUserFilter();
+    });
+  });
+}
+
+function syncCheckboxes() {
+  userSelectList.querySelectorAll("input[type=checkbox]").forEach(cb => {
+    cb.checked = selectedUsers === null || selectedUsers.has(cb.dataset.name);
+  });
+  updateUserSelectLabel();
+}
+
+function updateUserSelectLabel() {
+  if (selectedUsers === null) {
+    userSelectLabel.textContent = "All users";
+  } else if (selectedUsers.size === 0) {
+    userSelectLabel.textContent = "No users";
+  } else {
+    userSelectLabel.textContent = selectedUsers.size + " user" + (selectedUsers.size !== 1 ? "s" : "");
+  }
+}
+
+function populateUserSelect() {
+  userSelectBtn.disabled = false;
+  selectedUsers = null;
+  updateUserSelectLabel();
+  renderUserItems("");
+}
+
+function applyUserFilter() {
+  updateUserSelectLabel();
+  renderReport(lastEntries, currentMonday, lastUserNameMap);
+}
 
 /* ── Copy script ──────────────────────────────────────────── */
 document.getElementById("copyScriptBtn").addEventListener("click", () => {
@@ -999,7 +1197,7 @@ document.getElementById("parseJsonBtn").addEventListener("click", () => {
 /* ── CSV export ───────────────────────────────────────────── */
 document.getElementById("exportCsvBtn").addEventListener("click", () => {
   if (!lastEntries.length) { showStatus("Load a report first before exporting.", "warn"); return; }
-  const userMap = aggregate(lastEntries, lastDays);
+  const userMap = aggregate(lastEntries, lastDays, lastUserNameMap);
   const users   = Object.keys(userMap).sort();
   let csv = "User," + lastDays.map((d,i) => DAYS[i]+" "+d).join(",") + ",Total\n";
   users.forEach(u => {
