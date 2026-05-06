@@ -294,7 +294,41 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
+  margin-bottom: 12px;
+}
+.metrics-daily {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
   margin-bottom: 18px;
+}
+.metric-card-day {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  padding: 10px 14px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.metric-card-day.weekend { opacity: .65; }
+.metric-day-val {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.metric-day-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.metric-day-date {
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 1px;
 }
 .metric-card {
   background: var(--surface);
@@ -494,6 +528,7 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
   .page { padding: 16px; }
   .config-grid { grid-template-columns: 1fr; }
   .metrics { grid-template-columns: repeat(2, 1fr); }
+  .metrics-daily { grid-template-columns: repeat(4, 1fr); }
   .controls { gap: 6px; }
   .filter-input { width: 140px; }
 }
@@ -626,6 +661,7 @@ textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px r
 
   <!-- Metrics -->
   <div class="metrics hidden" id="metricsRow"></div>
+  <div class="metrics-daily hidden" id="metricsDailyRow"></div>
 
   <!-- Report table -->
   <div class="table-card hidden" id="tableCard">
@@ -750,7 +786,7 @@ async function fetchEntries(monday) {
 
   /* 7pace timehub OData — entity: workLogsOnly, datetime fields: camelCase, no quotes */
   const filter   = `timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z`;
-  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}`;
+  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}&$expand=User`;
 
   const resp = await fetch(endpoint, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
@@ -771,14 +807,13 @@ function aggregate(entries, days) {
   const userMap   = {};
   entries.forEach(e => {
     /* workLogsOnly flattens user fields at top level */
-    const name = e.userDisplayName
-              || e.UserDisplayName
+    const name = e.User?.displayName
               || e.User?.DisplayName
               || e.user?.displayName
+              || e.userDisplayName
+              || e.UserDisplayName
               || e.userName
               || e.UserName
-              || e.userId
-              || e.UserId
               || "Unknown";
     if (filterVal && !name.toLowerCase().includes(filterVal)) return;
     /* datetime field */
@@ -817,6 +852,16 @@ function renderReport(entries, monday) {
     `<div class="metric-card fade-up"><div class="metric-val">${v}</div><div class="metric-label">${l}</div></div>`
   ).join("");
   document.getElementById("metricsRow").classList.remove("hidden");
+
+  /* Daily totals */
+  document.getElementById("metricsDailyRow").innerHTML = days.map((d, i) => {
+    const v   = totalsByDay[d];
+    const dt  = new Date(d + "T12:00:00");
+    const cls = i >= 5 ? " metric-card-day weekend" : " metric-card-day";
+    const hrs = v > 0 ? (v / 3600).toFixed(1) + "h" : "—";
+    return `<div class="${cls} fade-up"><div class="metric-day-val">${hrs}</div><div class="metric-day-name">${DAYS[i]}</div><div class="metric-day-date">${fmtDate(dt)}</div></div>`;
+  }).join("");
+  document.getElementById("metricsDailyRow").classList.remove("hidden");
 
   /* Table subheader */
   const endDay = addDays(monday, 6);
@@ -882,6 +927,7 @@ async function loadReport(monday) {
       showStatus("No time entries found for this week. Try a different week or check your filter.", "info");
       document.getElementById("tableCard").classList.add("hidden");
       document.getElementById("metricsRow").classList.add("hidden");
+      document.getElementById("metricsDailyRow").classList.add("hidden");
     } else {
       renderReport(entries, monday);
       hideStatus();
