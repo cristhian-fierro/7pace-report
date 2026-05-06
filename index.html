@@ -884,7 +884,7 @@ async function fetchEntries(monday) {
   const top   = cfg.maxEntries || 5000;
 
   const filter   = `timestamp ge ${start}T00:00:00Z and timestamp lt ${end}T00:00:00Z`;
-  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}`;
+  const endpoint = `${url}/workLogsOnly?$filter=${encodeURIComponent(filter)}&$top=${top}&$expand=User`;
 
   const resp = await fetch(endpoint, {
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
@@ -893,7 +893,11 @@ async function fetchEntries(monday) {
   if (!resp.ok) { const b = await resp.text(); throw new Error(`HTTP ${resp.status}: ${b.slice(0,300)}`); }
   const data    = await resp.json();
   const entries = Array.isArray(data) ? data : (data.value || data.data || []);
-  if (entries.length > 0) console.log("[7pace debug] first entry:", JSON.stringify(entries[0], null, 2));
+  if (entries.length > 0) {
+    const first = entries[0];
+    console.log("[7pace debug] first entry keys:", Object.keys(first));
+    console.log("[7pace debug] first entry:", JSON.stringify(first, null, 2));
+  }
   return entries;
 }
 
@@ -904,10 +908,10 @@ function aggregate(entries, days, userNameMap = {}) {
     /* Resolve display name: try the Users map first, then any embedded field */
     const uid  = e.userId || e.UserId || e.userID || e.UserID || "";
     const name = (uid && userNameMap[uid])
-              || e.User?.displayName || e.User?.DisplayName
-              || e.user?.displayName
-              || e.userDisplayName   || e.UserDisplayName
-              || e.userName          || e.UserName
+              || e.User?.Name || e.User?.displayName || e.User?.DisplayName
+              || e.AddedByUser?.Name
+              || e.userDisplayName || e.UserDisplayName
+              || e.userName        || e.UserName
               || uid || "Unknown";
     if (selectedUsers !== null && !selectedUsers.has(name)) return;
     /* Slice date directly from ISO string to avoid local-timezone shift */
@@ -916,9 +920,9 @@ function aggregate(entries, days, userNameMap = {}) {
     const dateStr = typeof rawTs === "string" ? rawTs.slice(0, 10) : toISO(new Date(rawTs));
     if (!days.includes(dateStr)) return;
     if (!userMap[name]) userMap[name] = {};
-    /* Duration: 7pace stores seconds in `length`; also try other common names */
-    const secs = e.length ?? e.Length ?? e.duration ?? e.Duration
-              ?? e.workLength ?? e.WorkLength ?? e.seconds ?? e.Seconds ?? 0;
+    /* Duration: 7pace OData v3.2 uses PeriodLength in seconds */
+    const secs = e.PeriodLength ?? e.periodLength ?? e.length ?? e.Length
+              ?? e.duration ?? e.Duration ?? e.workLength ?? e.WorkLength ?? 0;
     userMap[name][dateStr] = (userMap[name][dateStr] || 0) + Number(secs);
   });
   return userMap;
@@ -1019,7 +1023,7 @@ async function loadReport(monday) {
   const url   = (cfg.apiUrl || "https://parabitsystems.timehub.7pace.com/api/odata/v3.2").replace(/\/$/, "");
   const token = cfg.apiToken || "";
   try {
-    const [entries, userNameMap] = await Promise.all([fetchEntries(monday), fetchUsers(url, token)]);
+    const [entries, userNameMap] = await Promise.all([fetchEntries(monday), Promise.resolve({})]);
     if (!entries.length) {
       showStatus("No time entries found for this week. Try a different week or check your filter.", "info");
       document.getElementById("tableCard").classList.add("hidden");
@@ -1029,6 +1033,15 @@ async function loadReport(monday) {
       renderReport(entries, monday, userNameMap);
       populateUserSelect();
       hideStatus();
+      /* Debug: if all hours are zero, show available field names */
+      const grand = entries.reduce((sum, e) => {
+        const secs = e.length ?? e.Length ?? e.duration ?? e.Duration
+                  ?? e.workLength ?? e.WorkLength ?? e.seconds ?? e.Seconds
+                  ?? e.timeInSeconds ?? e.TimeInSeconds ?? e.workTimeInSeconds
+                  ?? e.billableAmount ?? e.BillableAmount ?? e.workAmount ?? e.WorkAmount
+                  ?? e.totalSeconds ?? e.TotalSeconds ?? 0;
+        return sum + Number(secs);
+      }, 0);
     }
   } catch (err) {
     const isCors = err.message.includes("fetch") || err.message.includes("NetworkError") || err.message.includes("CORS");
@@ -1113,10 +1126,10 @@ function allUserNames() {
   lastEntries.forEach(e => {
     const uid  = e.userId || e.UserId || e.userID || e.UserID || "";
     const name = (uid && lastUserNameMap[uid])
-              || e.User?.displayName || e.User?.DisplayName
-              || e.user?.displayName
-              || e.userDisplayName   || e.UserDisplayName
-              || e.userName          || e.UserName
+              || e.User?.Name || e.User?.displayName || e.User?.DisplayName
+              || e.AddedByUser?.Name
+              || e.userDisplayName || e.UserDisplayName
+              || e.userName        || e.UserName
               || uid || "Unknown";
     names.add(name);
   });
