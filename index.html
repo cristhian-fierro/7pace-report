@@ -789,16 +789,16 @@ let lastEntries = [], lastDays = [], lastUserNameMap = {}, currentMonday = getMo
 let selectedUsers = null; // null = all selected; Set of names = filtered
 
 const SWQA_TEAM = new Set([
-  "Akash Ghosh",
-  "Aswin Devasahayam",
-  "Cristhian Fierro",
-  'Dongke "Clark" Wu',
-  "Jerwin Justin",
-  "Kayalvizhi Krishnamoorthy",
-  "Md Bhuiyan",
-  "Nicholas Falletta",
-  "Saravana Subramony",
-  "Yogita Bala",
+  "e8d1e033-94b9-4f9d-859d-05ab218134a8", // Dongke "Clark" Wu
+  "1ba86c0b-4398-4f50-a1d7-dd82890b7f8a", // Saravana Subramony
+  "65cf1935-0322-4957-9e38-06521fce8c0d", // Akash Ghosh
+  "1d51996c-a61c-4b08-93af-2c667a230e0a", // Aswin Devasahayam
+  "9ff4c866-7255-4392-82da-a28e8fee4e37", // Cristhian Fierro
+  "38dabd17-7316-4670-8661-0632ddf43e7a", // Jerwin Justin
+  "6889f55a-b851-445b-813b-f67b1e34f8a8", // Kayalvizhi Krishnamoorthy
+  "5c8fa0bc-a60c-455a-bae6-5d35ee007520", // Md Bhuiyan
+  "dd9d835b-b504-4883-9959-7809cab32684", // Nicholas Falletta
+  "aed61e09-6576-43df-8f5e-72796051eafe", // Yogita Bala
 ]);
 
 function getMonday(d) {
@@ -926,7 +926,7 @@ function aggregate(entries, days, userNameMap = {}) {
               || e.userDisplayName || e.UserDisplayName
               || e.userName        || e.UserName
               || uid || "Unknown";
-    if (selectedUsers !== null && !selectedUsers.has(name)) return;
+    if (selectedUsers !== null && !selectedUsers.has(uid)) return;
     /* Slice date directly from ISO string to avoid local-timezone shift */
     const rawTs = e.timestamp || e.Timestamp || e.date || e.Date || e.startTime;
     if (!rawTs) return;
@@ -1133,38 +1133,39 @@ document.getElementById("selectNoneBtn").addEventListener("click", () => {
   applyUserFilter();
 });
 
-function allUserNames() {
+function allUserEntries() {
   if (!lastEntries.length) return [];
-  const names = new Set();
+  const seen = new Map();
   lastEntries.forEach(e => {
     const uid  = e.userId || e.UserId || e.userID || e.UserID || "";
+    if (!uid || seen.has(uid)) return;
     const name = (uid && lastUserNameMap[uid])
               || e.User?.Name || e.User?.displayName || e.User?.DisplayName
               || e.AddedByUser?.Name
               || e.userDisplayName || e.UserDisplayName
               || e.userName        || e.UserName
               || uid || "Unknown";
-    names.add(name);
+    seen.set(uid, name);
   });
-  return [...names].sort();
+  return [...seen.entries()].map(([uid, name]) => ({ uid, name })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function renderUserItems(search) {
-  const names = allUserNames().filter(n => !search || n.toLowerCase().includes(search));
-  userSelectList.innerHTML = names.map(name => {
-    const checked = selectedUsers === null || selectedUsers.has(name);
-    const id = "uc_" + name.replace(/\W/g, "_");
+  const users = allUserEntries().filter(u => !search || u.name.toLowerCase().includes(search));
+  userSelectList.innerHTML = users.map(({ uid, name }) => {
+    const checked = selectedUsers === null || selectedUsers.has(uid);
+    const id = "uc_" + uid;
     return `<div class="user-select-item">
-      <input type="checkbox" id="${id}" data-name="${name}" ${checked ? "checked" : ""}>
+      <input type="checkbox" id="${id}" data-uid="${uid}" ${checked ? "checked" : ""}>
       <label for="${id}">${name}</label>
     </div>`;
   }).join("");
   userSelectList.querySelectorAll("input[type=checkbox]").forEach(cb => {
     cb.addEventListener("change", () => {
-      const name = cb.dataset.name;
-      if (selectedUsers === null) selectedUsers = new Set(allUserNames());
-      if (cb.checked) selectedUsers.add(name); else selectedUsers.delete(name);
-      if (selectedUsers.size === allUserNames().length) selectedUsers = null;
+      const uid = cb.dataset.uid;
+      if (selectedUsers === null) selectedUsers = new Set(allUserEntries().map(u => u.uid));
+      if (cb.checked) selectedUsers.add(uid); else selectedUsers.delete(uid);
+      if (selectedUsers.size === allUserEntries().length) selectedUsers = null;
       updateUserSelectLabel();
       applyUserFilter();
     });
@@ -1173,7 +1174,7 @@ function renderUserItems(search) {
 
 function syncCheckboxes() {
   userSelectList.querySelectorAll("input[type=checkbox]").forEach(cb => {
-    cb.checked = selectedUsers === null || selectedUsers.has(cb.dataset.name);
+    cb.checked = selectedUsers === null || selectedUsers.has(cb.dataset.uid);
   });
   updateUserSelectLabel();
 }
@@ -1190,9 +1191,9 @@ function updateUserSelectLabel() {
 
 function populateUserSelect() {
   userSelectBtn.disabled = false;
-  const available = allUserNames();
-  const qaInData  = available.filter(n => SWQA_TEAM.has(n));
-  selectedUsers   = qaInData.length > 0 ? new Set(qaInData) : null;
+  const available = allUserEntries();
+  const qaInData  = available.filter(u => SWQA_TEAM.has(u.uid));
+  selectedUsers   = qaInData.length > 0 ? new Set(qaInData.map(u => u.uid)) : null;
   updateUserSelectLabel();
   renderUserItems("");
   if (selectedUsers !== null) applyUserFilter();
