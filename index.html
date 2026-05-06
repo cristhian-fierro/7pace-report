@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>7pace · Weekly Timesheet Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Variables ────────────────────────────────────────────── */
+:root {
+  --bg:        #f5f4f0;
+  --surface:   #ffffff;
+  --border:    #e8e6e0;
+  --border-md: #d4d1c8;
+  --text:      #1a1916;
+  --muted:     #706e68;
+  --faint:     #b0ada6;
+  --accent:    #0057b8;
+  --accent-bg: #e8f0fc;
+  --green:     #0d6e2f;
+  --green-bg:  #e4f5eb;
+  --amber:     #7a4a00;
+  --amber-bg:  #fdf3dc;
+  --red:       #c0392b;
+  --rad-sm:    5px;
+  --rad-md:    9px;
+  --rad-lg:    14px;
+  --shadow:    0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+  --font:      'DM Sans', sans-serif;
+  --mono:      'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ── Topbar ───────────────────────────────────────────────── */
+.topbar {
+  background: var(--text);
+  color: #fff;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.logo-badge {
+  width: 28px;
+  height: 28px;
+  background: #0057b8;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topbar-sep { width: 1px; height: 22px; background: rgba(255,255,255,.15); }
+.topbar-sub { font-size: 13px; color: rgba(255,255,255,.5); font-weight: 300; }
+.topbar-spacer { flex: 1; }
+.topbar-week {
+  font-size: 12px;
+  color: rgba(255,255,255,.65);
+  font-family: var(--mono);
+  letter-spacing: .02em;
+}
+
+/* ── Layout ───────────────────────────────────────────────── */
+.page { max-width: 1200px; margin: 0 auto; padding: 28px 28px 60px; }
+
+/* ── Config panel ─────────────────────────────────────────── */
+.config-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+  box-shadow: var(--shadow);
+  padding: 22px 24px;
+  margin-bottom: 20px;
+}
+.config-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  cursor: pointer;
+  user-select: none;
+}
+.config-head-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--accent-bg);
+  border-radius: var(--rad-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.config-title { font-size: 14px; font-weight: 600; }
+.config-subtitle { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.config-toggle-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  padding: 4px 11px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all .15s;
+}
+.config-toggle-btn:hover { border-color: var(--border-md); color: var(--text); }
+.config-body { display: none; }
+.config-body.open { display: block; }
+.config-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 5px;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.field input, .field select {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  font-family: var(--font);
+  font-size: 13.5px;
+  color: var(--text);
+  background: #fafaf8;
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,87,184,.12);
+  background: #fff;
+}
+.field input[type=password] { letter-spacing: .08em; }
+.field .hint {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.config-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Controls bar ─────────────────────────────────────────── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.week-nav-btn {
+  width: 34px;
+  height: 38px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s, color .12s;
+  flex-shrink: 0;
+}
+.week-nav-btn:hover { background: var(--bg); color: var(--text); }
+.week-nav-input {
+  height: 38px;
+  border: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0 10px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--text);
+  background: none;
+  outline: none;
+  width: 130px;
+  text-align: center;
+}
+.sep { width: 1px; height: 28px; background: var(--border); }
+.btn {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all .15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.btn:hover { border-color: var(--border-md); background: #fafaf8; }
+.btn:active { transform: scale(.98); }
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn-primary:hover { background: #004fa6; border-color: #004fa6; }
+.btn-sm { height: 32px; padding: 0 12px; font-size: 12px; }
+.controls-right { margin-left: auto; display: flex; gap: 8px; }
+.filter-input {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  width: 180px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  transition: border-color .15s, box-shadow .15s;
+}
+.filter-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,87,184,.12);
+}
+
+/* ── Status messages ──────────────────────────────────────── */
+.status {
+  padding: 12px 16px;
+  border-radius: var(--rad-md);
+  font-size: 13px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+.status-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.status-info    { background: var(--accent-bg);  color: #004080;  border: 1px solid #c0d4f5; }
+.status-warn    { background: var(--amber-bg);   color: var(--amber); border: 1px solid #f0d490; }
+.status-error   { background: #fdecea;           color: var(--red);   border: 1px solid #f5c5c0; }
+.status-success { background: var(--green-bg);   color: var(--green); border: 1px solid #b0dfc0; }
+.hidden { display: none !important; }
+
+/* ── Metrics row ──────────────────────────────────────────── */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-md);
+  padding: 14px 18px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+.metric-val {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+/* ── Table ────────────────────────────────────────────────── */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.table-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: #fafaf8;
+}
+.table-card-title { font-size: 13px; font-weight: 600; }
+.table-card-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+thead { background: #fafaf8; }
+th {
+  padding: 9px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+th:first-child { text-align: left; min-width: 180px; }
+.th-day { display: block; font-size: 11px; font-weight: 600; }
+.th-date { display: block; font-size: 11px; font-weight: 400; color: var(--faint); margin-top: 1px; text-transform: none; letter-spacing: 0; }
+td {
+  padding: 9px 14px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  white-space: nowrap;
+}
+td:first-child { text-align: left; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: #fafaf8; }
+.total-row td {
+  background: #f5f4f0 !important;
+  border-top: 1px solid var(--border-md);
+  font-weight: 600;
+}
+.user-cell { display: flex; align-items: center; gap: 9px; }
+.avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  font-size: 10px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.user-name { font-weight: 500; }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: var(--mono);
+}
+.pill-hi  { background: var(--green-bg); color: var(--green); }
+.pill-md  { background: var(--accent-bg); color: var(--accent); }
+.pill-lo  { background: #f0efeb; color: var(--muted); }
+.pill-tot { background: #ebe9ff; color: #3d1fa8; font-weight: 600; }
+.zero { color: var(--faint); }
+.weekend-col { opacity: .65; }
+
+/* ── CORS fallback ────────────────────────────────────────── */
+.fallback-card {
+  background: var(--surface);
+  border: 1px solid #f0d490;
+  border-radius: var(--rad-lg);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: none;
+}
+.fallback-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.fallback-body { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
+.code-block {
+  background: #1a1916;
+  color: #e8e6e0;
+  border-radius: var(--rad-sm);
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  position: relative;
+}
+.copy-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: var(--rad-sm);
+  color: #e8e6e0;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background .15s;
+}
+.copy-btn:hover { background: rgba(255,255,255,.2); }
+textarea.json-paste {
+  width: 100%;
+  height: 100px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  background: #fafaf8;
+  resize: vertical;
+  outline: none;
+  transition: border-color .15s;
+  margin-bottom: 10px;
+}
+textarea.json-paste:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,87,184,.12); }
+
+/* ── Loading overlay ──────────────────────────────────────── */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(245,244,240,.8);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.loading-overlay.active { display: flex; }
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border-md);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-label { font-size: 13px; color: var(--muted); }
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .25s ease forwards; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page { padding: 16px; }
+  .config-grid { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+  .controls { gap: 6px; }
+  .filter-input { width: 140px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-label">Fetching timesheet data…</div>
+</div>
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <div class="logo-badge">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="1.8"/>
+        <path d="M12 7v5l3.5 3.5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    7pace
+  </div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-sub">Weekly Timesheet Report</div>
+  <div class="topbar-spacer"></div>
+  <div class="topbar-week" id="topbarWeek"></div>
+</header>
+
+<main class="page">
+
+  <!-- Config card -->
+  <div class="config-card" id="configCard">
+    <div class="config-head" id="configToggle">
+      <div class="config-head-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0057b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="config-title">Connection settings</div>
+        <div class="config-subtitle" id="configSubtitle">Click to configure your 7pace API token</div>
+      </div>
+      <button class="config-toggle-btn" id="configToggleBtn">Show</button>
+    </div>
+    <div class="config-body" id="configBody">
+      <div class="config-grid">
+        <div class="field">
+          <label>7pace API base URL</label>
+          <input type="text" id="apiUrl" value="https://app.7pace.com/api/rest/3.0" placeholder="https://app.7pace.com/api/rest/3.0">
+          <div class="hint">Leave as default unless your org uses a custom 7pace domain.</div>
+        </div>
+        <div class="field">
+          <label>API token <span style="color:var(--red)">*</span></label>
+          <input type="password" id="apiToken" placeholder="Paste your 7pace personal access token">
+          <div class="hint">Azure DevOps → Extensions → 7pace → Settings → API Tokens → New token</div>
+        </div>
+        <div class="field">
+          <label>Filter users (optional)</label>
+          <input type="text" id="savedFilter" placeholder="e.g. John — blank shows all users">
+          <div class="hint">Case-insensitive substring match on display name.</div>
+        </div>
+        <div class="field">
+          <label>Max entries per fetch</label>
+          <input type="number" id="maxEntries" value="5000" min="100" max="10000" step="100">
+          <div class="hint">Increase if your team logs more than 5 000 entries per week.</div>
+        </div>
+      </div>
+      <div class="config-actions">
+        <button class="btn btn-primary" id="saveConfigBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save &amp; load report
+        </button>
+        <button class="btn" id="clearConfigBtn">Clear saved token</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status message -->
+  <div class="status hidden" id="statusMsg">
+    <span class="status-icon" id="statusIcon"></span>
+    <span id="statusText"></span>
+  </div>
+
+  <!-- CORS fallback -->
+  <div class="fallback-card" id="corsHelp">
+    <div class="fallback-title">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      Browser blocked the request (CORS) — use the PowerShell fallback
+    </div>
+    <div class="fallback-body">
+      7pace's API blocked the direct browser request. Run the script below in PowerShell, then paste the JSON response back here to render the report.
+    </div>
+    <div class="code-block" id="psScript">
+      <button class="copy-btn" id="copyScriptBtn">Copy</button>
+      <span id="psScriptContent"></span>
+    </div>
+    <label style="font-size:12px;font-weight:500;color:var(--muted);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;">Paste JSON response</label>
+    <textarea class="json-paste" id="rawJson" placeholder='{"data":[{"timestamp":"...","length":3600,"user":{"displayName":"..."}}]}'></textarea>
+    <button class="btn btn-primary btn-sm" id="parseJsonBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Render from JSON
+    </button>
+  </div>
+
+  <!-- Controls bar -->
+  <div class="controls" id="controlsBar">
+    <div class="week-nav">
+      <button class="week-nav-btn" id="prevWeek" title="Previous week">&#8249;</button>
+      <input type="date" class="week-nav-input" id="weekInput">
+      <button class="week-nav-btn" id="nextWeek" title="Next week">&#8250;</button>
+    </div>
+    <button class="btn btn-sm" id="thisWeekBtn">This week</button>
+    <button class="btn btn-sm" id="lastWeekBtn">Last week</button>
+    <div class="sep"></div>
+    <input type="text" class="filter-input" id="filterInput" placeholder="&#128269; Filter by user…">
+    <div class="sep"></div>
+    <button class="btn btn-primary" id="loadBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      Load report
+    </button>
+    <div class="controls-right">
+      <button class="btn btn-sm" id="exportCsvBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics hidden" id="metricsRow"></div>
+
+  <!-- Report table -->
+  <div class="table-card hidden" id="tableCard">
+    <div class="table-card-header">
+      <div>
+        <div class="table-card-title">Timesheet entries by user</div>
+        <div class="table-card-sub" id="tableCardSub"></div>
+      </div>
+      <div style="font-size:12px;color:var(--faint)" id="entryCount"></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ── Config persistence ───────────────────────────────────── */
+const LS_KEY = "7pace_report_config";
+
+function loadConfig() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
+}
+function saveConfig(cfg) {
+  localStorage.setItem(LS_KEY, JSON.stringify(cfg));
+}
+
+const cfg = loadConfig();
+if (cfg.apiUrl)      document.getElementById("apiUrl").value      = cfg.apiUrl;
+if (cfg.apiToken)    document.getElementById("apiToken").value    = cfg.apiToken;
+if (cfg.userFilter)  document.getElementById("savedFilter").value = cfg.userFilter;
+if (cfg.maxEntries)  document.getElementById("maxEntries").value  = cfg.maxEntries;
+
+/* ── Helpers ──────────────────────────────────────────────── */
+const DAYS   = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const COLORS = [
+  ["#e8f0fc","#0057b8"], ["#e4f5eb","#0d6e2f"], ["#f3e9ff","#5c2d91"],
+  ["#fff3cd","#7a4a00"], ["#fde8e8","#c0392b"], ["#e0f7f4","#0d6e5a"],
+  ["#fce8f6","#8b0070"], ["#e8f5e9","#1b6e3a"],
+];
+
+let lastEntries = [], lastDays = [], currentMonday = getMonday(new Date());
+
+function getMonday(d) {
+  const dt = new Date(d); dt.setHours(0,0,0,0);
+  const day = dt.getDay();
+  dt.setDate(dt.getDate() + (day === 0 ? -6 : 1 - day));
+  return dt;
+}
+function toISO(d)      { return d.toISOString().slice(0, 10); }
+function addDays(d, n) { const dt = new Date(d); dt.setDate(dt.getDate() + n); return dt; }
+function fmtDate(d)    { return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }); }
+function initials(n)   { return n.split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase(); }
+
+function setWeekInput(monday) {
+  document.getElementById("weekInput").value = toISO(monday);
+  const end = addDays(monday, 6);
+  document.getElementById("topbarWeek").textContent = fmtDate(monday) + " – " + fmtDate(end);
+}
+setWeekInput(currentMonday);
+
+/* ── Config toggle ────────────────────────────────────────── */
+let configOpen = !cfg.apiToken;
+function syncConfigUI() {
+  const body = document.getElementById("configBody");
+  const btn  = document.getElementById("configToggleBtn");
+  if (configOpen) { body.classList.add("open"); btn.textContent = "Hide"; }
+  else            { body.classList.remove("open"); btn.textContent = "Show"; }
+  const sub = document.getElementById("configSubtitle");
+  sub.textContent = cfg.apiToken ? "Token saved — click to edit" : "Click to configure your 7pace API token";
+}
+syncConfigUI();
+document.getElementById("configToggle").addEventListener("click", () => { configOpen = !configOpen; syncConfigUI(); });
+
+document.getElementById("saveConfigBtn").addEventListener("click", () => {
+  const newCfg = {
+    apiUrl:     document.getElementById("apiUrl").value.trim().replace(/\/$/, ""),
+    apiToken:   document.getElementById("apiToken").value.trim(),
+    userFilter: document.getElementById("savedFilter").value.trim(),
+    maxEntries: document.getElementById("maxEntries").value,
+  };
+  if (!newCfg.apiToken) { showStatus("Please enter your API token first.", "warn"); return; }
+  saveConfig(newCfg);
+  Object.assign(cfg, newCfg);
+  configOpen = false; syncConfigUI();
+  loadReport(currentMonday);
+});
+
+document.getElementById("clearConfigBtn").addEventListener("click", () => {
+  localStorage.removeItem(LS_KEY);
+  document.getElementById("apiToken").value = "";
+  showStatus("Saved token cleared.", "info");
+});
+
+/* ── Status helpers ───────────────────────────────────────── */
+function showStatus(text, type) {
+  const icons = { info:"ℹ️", warn:"⚠️", error:"❌", success:"✅" };
+  const el = document.getElementById("statusMsg");
+  el.className = "status status-" + type;
+  document.getElementById("statusIcon").textContent = icons[type] || "";
+  document.getElementById("statusText").textContent = text;
+  el.classList.remove("hidden");
+}
+function hideStatus() { document.getElementById("statusMsg").classList.add("hidden"); }
+
+/* ── PowerShell script builder ────────────────────────────── */
+function buildPsScript(url, token, start, end, top) {
+  return `$headers = @{\n  Authorization = "Bearer ${token}"\n  "Content-Type" = "application/json"\n}\n$filter  = "timestamp ge '${start}T00:00:00Z' and timestamp lt '${end}T00:00:00Z'"\n$url     = "${url}/workLogs?` + `\$filter=" + [uri]::EscapeDataString($filter) + "&\$include=user&\$top=${top}"\n$result  = Invoke-RestMethod -Uri $url -Headers $headers -Method Get\n$result | ConvertTo-Json -Depth 10 | Set-Clipboard\nWrite-Host "Copied to clipboard!"`;
+}
+
+/* ── Fetch ────────────────────────────────────────────────── */
+async function fetchEntries(monday) {
+  const url   = (cfg.apiUrl || "https://app.7pace.com/api/rest/3.0").replace(/\/$/, "");
+  const token = cfg.apiToken || "";
+  const start = toISO(monday);
+  const end   = toISO(addDays(monday, 7));
+  const top   = cfg.maxEntries || 5000;
+
+  const filter   = `timestamp ge '${start}T00:00:00Z' and timestamp lt '${end}T00:00:00Z'`;
+  const endpoint = `${url}/workLogs?$filter=${encodeURIComponent(filter)}&$include=user&$top=${top}`;
+
+  const resp = await fetch(endpoint, {
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+  });
+
+  if (!resp.ok) { const b = await resp.text(); throw new Error(`HTTP ${resp.status}: ${b.slice(0,300)}`); }
+  const data = await resp.json();
+  return Array.isArray(data) ? data : (data.data || data.value || []);
+}
+
+/* ── Aggregate ────────────────────────────────────────────── */
+function aggregate(entries, days) {
+  const filterVal = (document.getElementById("filterInput").value.trim() || cfg.userFilter || "").toLowerCase();
+  const userMap   = {};
+  entries.forEach(e => {
+    const name    = e.user?.displayName || e.user?.name || e.userId || "Unknown";
+    if (filterVal && !name.toLowerCase().includes(filterVal)) return;
+    const dateStr = toISO(new Date(e.timestamp || e.date || e.startTime));
+    if (!days.includes(dateStr)) return;
+    if (!userMap[name]) userMap[name] = {};
+    userMap[name][dateStr] = (userMap[name][dateStr] || 0) + (e.length || e.duration || 0);
+  });
+  return userMap;
+}
+
+/* ── Render ───────────────────────────────────────────────── */
+function renderReport(entries, monday) {
+  const days = Array.from({ length: 7 }, (_, i) => toISO(addDays(monday, i)));
+  lastEntries = entries; lastDays = days;
+
+  const userMap      = aggregate(entries, days);
+  const users        = Object.keys(userMap).sort();
+  const totalsByDay  = {};
+  days.forEach(d => (totalsByDay[d] = 0));
+  let grand = 0;
+  users.forEach(u => days.forEach(d => { const v = userMap[u][d]||0; totalsByDay[d]+=v; grand+=v; }));
+
+  /* Metrics */
+  const avgHrs = users.length ? ((grand/3600)/users.length).toFixed(1) : "—";
+  document.getElementById("metricsRow").innerHTML = [
+    [(grand/3600).toFixed(1), "Total hours"],
+    [users.length,            "Users"],
+    [entries.length,          "Entries"],
+    [avgHrs,                  "Avg hrs / user"],
+  ].map(([v,l]) =>
+    `<div class="metric-card fade-up"><div class="metric-val">${v}</div><div class="metric-label">${l}</div></div>`
+  ).join("");
+  document.getElementById("metricsRow").classList.remove("hidden");
+
+  /* Table subheader */
+  const endDay = addDays(monday, 6);
+  document.getElementById("tableCardSub").textContent = fmtDate(monday) + " – " + fmtDate(endDay);
+  document.getElementById("entryCount").textContent   = entries.length + " entries";
+  document.getElementById("topbarWeek").textContent   = fmtDate(monday) + " – " + fmtDate(endDay);
+
+  /* Head */
+  let head = "<tr><th>User</th>";
+  days.forEach((d, i) => {
+    const dt  = new Date(d + "T12:00:00");
+    const cls = i >= 5 ? ' class="weekend-col"' : '';
+    head += `<th${cls}><span class="th-day">${DAYS[i]}</span><span class="th-date">${fmtDate(dt)}</span></th>`;
+  });
+  head += "<th>Total</th></tr>";
+  document.getElementById("tableHead").innerHTML = head;
+
+  /* Body */
+  let body = "";
+  users.forEach((u, ui) => {
+    const [bg, fg] = COLORS[ui % COLORS.length];
+    let rowTotal = 0;
+    body += `<tr><td><div class="user-cell"><div class="avatar" style="background:${bg};color:${fg}">${initials(u)}</div><span class="user-name">${u}</span></div></td>`;
+    days.forEach((d, di) => {
+      const v = userMap[u][d] || 0;
+      rowTotal += v;
+      const h   = v > 0 ? (v/3600).toFixed(1) : null;
+      const cls = di >= 5 ? ' class="weekend-col"' : '';
+      body += `<td${cls}>${h
+        ? `<span class="pill ${parseFloat(h)>=6?"pill-hi":parseFloat(h)>=2?"pill-md":"pill-lo"}">${h}h</span>`
+        : `<span class="zero">—</span>`}</td>`;
+    });
+    body += `<td><span class="pill pill-tot">${(rowTotal/3600).toFixed(1)}h</span></td></tr>`;
+  });
+
+  /* Totals row */
+  body += `<tr class="total-row"><td><strong>Total</strong></td>`;
+  days.forEach((d, di) => {
+    const v   = totalsByDay[d];
+    const cls = di >= 5 ? ' class="weekend-col"' : '';
+    body += `<td${cls}>${v>0 ? `<strong>${(v/3600).toFixed(1)}h</strong>` : `<span class="zero">—</span>`}</td>`;
+  });
+  body += `<td><strong>${(grand/3600).toFixed(1)}h</strong></td></tr>`;
+
+  document.getElementById("tableBody").innerHTML = body;
+  document.getElementById("tableCard").classList.remove("hidden");
+  document.getElementById("tableCard").classList.add("fade-up");
+}
+
+/* ── Load cycle ───────────────────────────────────────────── */
+async function loadReport(monday) {
+  if (!cfg.apiToken) {
+    configOpen = true; syncConfigUI();
+    showStatus("Enter your 7pace API token in the settings above, then click Save & load report.", "warn");
+    return;
+  }
+  hideStatus();
+  document.getElementById("corsHelp").style.display = "none";
+  document.getElementById("loadingOverlay").classList.add("active");
+  try {
+    const entries = await fetchEntries(monday);
+    if (!entries.length) {
+      showStatus("No time entries found for this week. Try a different week or check your filter.", "info");
+      document.getElementById("tableCard").classList.add("hidden");
+      document.getElementById("metricsRow").classList.add("hidden");
+    } else {
+      renderReport(entries, monday);
+      hideStatus();
+    }
+  } catch (err) {
+    const isCors = err.message.includes("fetch") || err.message.includes("NetworkError") || err.message.includes("CORS");
+    if (isCors) {
+      const start = toISO(monday);
+      const end   = toISO(addDays(monday, 7));
+      document.getElementById("psScriptContent").textContent = buildPsScript(cfg.apiUrl || "https://app.7pace.com/api/rest/3.0", cfg.apiToken, start, end, cfg.maxEntries||5000);
+      document.getElementById("corsHelp").style.display = "block";
+      showStatus("The browser was blocked by CORS. Use the PowerShell script below to fetch the data.", "warn");
+    } else {
+      showStatus("Error: " + err.message, "error");
+    }
+  } finally {
+    document.getElementById("loadingOverlay").classList.remove("active");
+  }
+}
+
+/* ── Controls wiring ──────────────────────────────────────── */
+document.getElementById("prevWeek").addEventListener("click", () => {
+  currentMonday = addDays(currentMonday, -7);
+  setWeekInput(currentMonday);
+  loadReport(currentMonday);
+});
+document.getElementById("nextWeek").addEventListener("click", () => {
+  currentMonday = addDays(currentMonday, 7);
+  setWeekInput(currentMonday);
+  loadReport(currentMonday);
+});
+document.getElementById("thisWeekBtn").addEventListener("click", () => {
+  currentMonday = getMonday(new Date());
+  setWeekInput(currentMonday);
+  loadReport(currentMonday);
+});
+document.getElementById("lastWeekBtn").addEventListener("click", () => {
+  currentMonday = getMonday(addDays(new Date(), -7));
+  setWeekInput(currentMonday);
+  loadReport(currentMonday);
+});
+document.getElementById("weekInput").addEventListener("change", e => {
+  currentMonday = getMonday(new Date(e.target.value + "T12:00:00"));
+  setWeekInput(currentMonday);
+});
+document.getElementById("loadBtn").addEventListener("click", () => loadReport(currentMonday));
+document.getElementById("filterInput").addEventListener("keydown", e => { if (e.key === "Enter") loadReport(currentMonday); });
+
+/* ── Copy script ──────────────────────────────────────────── */
+document.getElementById("copyScriptBtn").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("psScriptContent").textContent)
+    .then(() => { document.getElementById("copyScriptBtn").textContent = "Copied!"; setTimeout(()=>{ document.getElementById("copyScriptBtn").textContent="Copy"; }, 2000); });
+});
+
+/* ── Parse pasted JSON ────────────────────────────────────── */
+document.getElementById("parseJsonBtn").addEventListener("click", () => {
+  const raw = document.getElementById("rawJson").value.trim();
+  try {
+    const data    = JSON.parse(raw);
+    const entries = Array.isArray(data) ? data : (data.data || data.value || []);
+    renderReport(entries, currentMonday);
+    document.getElementById("corsHelp").style.display = "none";
+    hideStatus();
+  } catch (e) {
+    showStatus("Invalid JSON: " + e.message, "error");
+  }
+});
+
+/* ── CSV export ───────────────────────────────────────────── */
+document.getElementById("exportCsvBtn").addEventListener("click", () => {
+  if (!lastEntries.length) { showStatus("Load a report first before exporting.", "warn"); return; }
+  const userMap = aggregate(lastEntries, lastDays);
+  const users   = Object.keys(userMap).sort();
+  let csv = "User," + lastDays.map((d,i) => DAYS[i]+" "+d).join(",") + ",Total\n";
+  users.forEach(u => {
+    let t = 0;
+    const row = [u];
+    lastDays.forEach(d => { const v = userMap[u][d]||0; t+=v; row.push((v/3600).toFixed(2)); });
+    row.push((t/3600).toFixed(2));
+    csv += row.join(",") + "\n";
+  });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+  a.download = "7pace_weekly_" + toISO(currentMonday) + ".csv";
+  a.click();
+});
+
+/* ── Auto-load if token already saved ─────────────────────── */
+if (cfg.apiToken) { loadReport(currentMonday); }
+</script>
+</body>
+</html>
